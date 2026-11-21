@@ -52,7 +52,7 @@ class Element {
   scrollIntoView(){}
 }
 
-function mount(storage,clock) {
+function mount(storage,clock,{deferRoster=false}={}) {
   const ids=new Map(
     [...html.matchAll(/id="([^"]+)"/g)].map(m=>[m[1],new Element()])
   );
@@ -79,6 +79,7 @@ function mount(storage,clock) {
     }
   };
   const intervals=[];
+  let finishRoster=null;
   class FakeDate extends Date {
     constructor(...args){super(...(args.length?args:[clock.now]));}
     static now(){return clock.now;}
@@ -91,10 +92,14 @@ function mount(storage,clock) {
     setInterval(fn){intervals.push(fn);return intervals.length;},
     setTimeout(){return 1;},
     clearTimeout(){},
-    fetch:async()=>({ok:true,json:async()=>roster}),
+    fetch:deferRoster
+      ? ()=>new Promise(resolve=>{
+          finishRoster=()=>resolve({ok:true,json:async()=>roster});
+        })
+      : async()=>({ok:true,json:async()=>roster}),
   };
   vm.runInNewContext(app,context,{filename:'web/app.js',timeout:3000});
-  return {document,ids,boards,characterDetails,intervals};
+  return {document,ids,boards,characterDetails,intervals,resolveRoster:()=>finishRoster?.()};
 }
 function storage(){
   const data=new Map();
@@ -120,9 +125,13 @@ test('guest button creates a persistent random name, without registration',async
   const first=saved('player',cache);
   assert.match(first.handle,/^[A-Za-z]{4,25}_[0-9]{4}$/);
   assert.ok(page.ids.get('user-handle').textContent.includes(first.handle));
+  const firstCard=saved('round',cache).current;
+  assert.ok(firstCard,'Play as Guest must instantly draw a fighter');
+  assert.equal(page.ids.get('current-name').textContent,firstCard.name);
   page.ids.get('guest-start').click();
   const second=saved('player',cache);
   assert.notEqual(first.handle,second.handle,'Pressing again generates a different name');
+  assert.equal(saved('round',cache).current.id,firstCard.id,'Changing name preserves drawn fighter');
   const reopened=mount(cache,clock);
   await flush();
   assert.equal(reopened.ids.get('user-handle').textContent,'@'+second.handle);
@@ -137,16 +146,15 @@ test('six unique local picks persist, submit locks and next Istanbul day resets'
   page.ids.get('guest-start').click();
   const picked=new Set();
   for(let i=0;i<6;i++){
-    const button=page.document.getElementById('draw-character');
-    assert.equal(button.disabled,false);
-    button.click();
     const progress=saved('round',cache);
-    assert.ok(progress.current);
+    assert.ok(progress.current,'A card should be automatically drawn for every stat');
     assert.ok(!picked.has(progress.current.id));
     picked.add(progress.current.id);
     const grid=page.ids.get('stat-grid');
     grid.children[i].click();
     assert.equal(saved('round',cache).picks.length,i+1);
+    assert.equal(saved('round',cache).current===null,i===5,
+      'Draw the next character after a pick, except after the sixth');
   }
   assert.equal(picked.size,6);
   assert.equal(page.ids.get('submit-lineup').disabled,false);
@@ -173,4 +181,19 @@ test('six unique local picks persist, submit locks and next Istanbul day resets'
   assert.equal(saved('round',cache).picks.length,0);
   assert.equal(saved('history',cache).length,1,'Past submissions survive day rollover');
   assert.equal(reopened.ids.get('submit-lineup').disabled,true);
+});
+
+test('pressing Play while character roster is loading draws as soon as data arrives',async()=>{
+  const cache=storage();
+  const clock={now:Date.parse('2026-11-22T13:00:00Z')};
+  const page=mount(cache,clock,{deferRoster:true});
+  page.ids.get('guest-start').click();
+  assert.ok(saved('player',cache).handle);
+  assert.equal(saved('round',cache).current,null,'Cannot draw before data is available');
+  page.resolveRoster();
+  await flush();
+  const card=saved('round',cache).current;
+  assert.ok(card,'After loading the roster, a fighter should appear automatically');
+  assert.equal(page.ids.get('current-name').textContent,card.name);
+  assert.equal(page.document.getElementById('draw-character').hidden,true);
 });
