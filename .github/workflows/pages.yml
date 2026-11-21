@@ -4,7 +4,7 @@ on:
     branches: [main]
     paths:
       - 'web/**'
-      - 'app/public/assets/portraits/**'
+      - 'app/src/data/characters.json'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 permissions:
@@ -23,15 +23,14 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-      - name: Assemble static site and original character portraits
+      - name: Verify franchise guest roster and static files
         run: |
           set -euo pipefail
-          mkdir -p web/app/public/assets
-          cp -R app/public/assets/portraits web/app/public/assets/portraits
           test -f web/index.html
           test -f web/app.js
+          test -f web/guest-roster.json
           test -f web/styles.css
-          test -f web/config.js
+          node -e "const a=require('./web/guest-roster.json');if(a.length!==160)process.exit(1)"
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
