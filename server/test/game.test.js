@@ -75,7 +75,7 @@ test('persistent multiuser registration, password, six draws, settlement and his
 
     game.logout(aliceLogin.token);
     assert.equal(game.getUser(aliceLogin.token),null);
-    assert.equal(game.getUser(alice.token).handle,'AlicePlayer','Other sessions are unaffected');
+    assert.equal(game.getUser(alice.token).username,'AlicePlayer','Other sessions are unaffected');
     game.close();
     game=makeGame({dbPath,clock:()=>now});
     const restored=game.state(bob.token);
