@@ -231,3 +231,26 @@ test('old original-universe guest lineups are reset on crossover migration',asyn
   assert.equal(saved('player',cache).handle,'IronFalcon_4827','Guest name is preserved');
   assert.equal(page.ids.get('current-name').textContent,migrated.current.name);
 });
+
+
+test('stale Selene Sorn card is rejected even if old cache flagged the current roster',async()=>{
+  const cache=storage();
+  const clock={now:Date.parse('2026-11-22T13:00:00Z')};
+  cache.setItem('daily-stat-clash.guest.roster-version',
+    'hxh-naruto-dc-marvel-witcher-jjk-aot-bleach-v2');
+  cache.setItem('daily-stat-clash.guest.player.v1',JSON.stringify({
+    handle:'IronFalcon_4827',createdAt:1
+  }));
+  cache.setItem('daily-stat-clash.guest.round.v1',JSON.stringify({
+    day:'2026-11-22',picks:[],submitted:false,
+    current:{id:'selene-sorn',name:'Selene Sorn',universe:'Obsidian Order'}
+  }));
+  const page=mount(cache,clock);
+  await flush();
+  const after=saved('round',cache);
+  assert.ok(after.current);
+  assert.notEqual(after.current.id,'selene-sorn');
+  assert.match(after.current.id,/^(hxh|naruto|dc|marvel|witcher|jjk|aot|bleach)-/);
+  assert.equal(page.ids.get('current-name').textContent,after.current.name);
+  assert.equal(page.ids.get('count-characters').textContent,160);
+});
