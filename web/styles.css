@@ -42,3 +42,60 @@
 .character-display[data-universe="Jujutsu Kaisen"]{background:radial-gradient(ellipse at 50% 35%,#7c5488,#45335d 47%,#261c3c 95%)}
 .character-display[data-universe="Attack on Titan"]{background:radial-gradient(ellipse at 50% 35%,#7d6f52,#534b39 47%,#272b24 95%)}
 .character-display[data-universe="Bleach"]{background:radial-gradient(ellipse at 50% 35%,#6991a2,#395b6c 47%,#1c3240 95%)}
+
+
+/* Three separate local guest profiles. Each slot owns its own daily lineup. */
+.guest-lobby{margin:26px 0 0;padding:19px 22px 18px;border:1px solid #76586e;border-radius:12px;background:linear-gradient(115deg,#272039,#1b182a)}
+.guest-lobby-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}
+.guest-lobby-heading>span:last-child{font:800 11px 'Space Grotesk',sans-serif;color:#e5b5ca;letter-spacing:1px}
+.guest-switcher{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.guest-slot{min-width:0;display:flex;align-items:flex-start;flex-direction:column;gap:7px;min-height:102px;padding:13px 15px;text-align:left;color:#ece2ee;background:#181321;border:1px solid #554057;border-radius:9px;transition:border-color .2s,background .2s}
+.guest-slot:not(:disabled):hover{border-color:#cf849f;background:#302137}
+.guest-slot.active{border-color:var(--rose);background:linear-gradient(140deg,#463049,#2b2036);box-shadow:inset 0 0 0 1px #e28eab2b}
+.guest-slot.empty{border-style:dashed}
+.guest-slot:disabled{opacity:.58}
+.guest-index{font-size:9px;font-weight:800;letter-spacing:1.35px;color:#cf92b0}
+.guest-name{font:700 clamp(11px,1.25vw,15px) 'Space Grotesk',sans-serif;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.guest-progress{font-size:11px;color:#b9a7c0}
+.guest-slot.active .guest-progress{color:#f8b6cd}
+.guest-lobby-help{margin:12px 2px 0;color:#b2a4ba;font-size:11px;line-height:1.65}
+
+.matchup-section{scroll-margin-top:16px}
+.matchup-intro{font-size:13px;color:#b9a8c0;line-height:1.75;margin:0 0 20px}
+.matchup-results{display:grid;gap:14px}
+.duel-card{background:#1a1525;border:1px solid #524059;border-radius:10px;overflow:hidden}
+.duel-head{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:15px;padding:17px 20px;border-bottom:1px solid #51415d;background:#30243b}
+.duel-head strong{font:700 13px 'Space Grotesk',sans-serif;overflow-wrap:anywhere}
+.duel-head strong:last-child{text-align:right}
+.duel-score{color:#ffa7c0;font:800 24px 'Space Grotesk',sans-serif;white-space:nowrap}
+.matchup-breakdown{display:grid;padding:5px 15px 13px}
+.matchup-stat-line{display:grid;grid-template-columns:minmax(0,1fr) 105px minmax(0,1fr);align-items:center;gap:12px;border-bottom:1px solid #ffffff12;padding:12px 5px;font-size:12px;color:#b9abc3}
+.matchup-stat-line:last-child{border-bottom:0}
+.matchup-stat-line>span:last-child{text-align:right}
+.matchup-stat-line .winner{color:#88e2ba;font-weight:800}
+.matchup-stat-name{font-weight:800;text-align:center;text-transform:uppercase;letter-spacing:.6px;color:#edafc8;font-size:10px}
+#matchup-results .empty-state{border:1px dashed #51415d;border-radius:9px}
+.history-row>.matchup-breakdown{grid-column:1/-1;background:#191222;border:1px solid #3f334c;border-radius:8px;margin-top:6px}
+.history-row>.matchup-breakdown[hidden]{display:none}
+#resolve-matches:disabled{opacity:.48}
+
+@media(max-width:780px){
+  .guest-switcher{gap:8px}
+  .guest-slot{padding:12px 10px;min-height:108px}
+  .guest-name{font-size:12px}
+  .duel-head{gap:8px;padding:14px}
+  .matchup-stat-line{grid-template-columns:minmax(0,1fr) 90px minmax(0,1fr);gap:7px;font-size:11px}
+}
+@media(max-width:520px){
+  .guest-lobby{padding:14px 12px}
+  .guest-switcher{grid-template-columns:1fr;gap:8px}
+  .guest-slot{min-height:auto;display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;gap:4px 10px}
+  .guest-index{grid-row:span 2}
+  .guest-name{font-size:14px}
+  .guest-progress{font-size:10px}
+  .matchup-stat-line{grid-template-columns:minmax(0,1fr) 69px minmax(0,1fr);gap:6px;font-size:10px;line-height:1.5}
+  .matchup-stat-name{font-size:9px;letter-spacing:0}
+  .duel-head strong{font-size:11px}
+  .duel-score{font-size:19px}
+  .history-row>.matchup-breakdown{padding:6px}
+}
