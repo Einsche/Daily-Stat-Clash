@@ -56,6 +56,7 @@
   // The publishable/anon key only identifies the Supabase project.
   // All game authorization happens inside PostgreSQL RPCs using a server-hashed session token.
   // Never expose a service_role key or a password hash in the browser.
+  // New sb_publishable_* keys are NOT JWTs: never send them as Authorization Bearer.
   async function rpc(name,body={}) {
     if(!ready) throw Error('Account server not connected yet. Configure the Supabase project in web/config.js.');
     const payload = {...body};
@@ -67,8 +68,7 @@
       cache:'no-store',
       headers:{
         'Content-Type':'application/json',
-        'apikey':config.supabaseAnonKey,
-        'Authorization':'Bearer '+config.supabaseAnonKey
+        'apikey':config.supabaseAnonKey
       },
       body:JSON.stringify(payload)
     });
