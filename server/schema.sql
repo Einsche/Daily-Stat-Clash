@@ -80,3 +80,10 @@ CREATE TABLE IF NOT EXISTS settled_days (
   day TEXT PRIMARY KEY,
   settled_at INTEGER NOT NULL
 );
+
+-- Character-roster revision. A changed full roster triggers a transactional
+-- purge of old character references and results, without deleting user accounts.
+CREATE TABLE IF NOT EXISTS game_meta (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
