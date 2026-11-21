@@ -6,6 +6,12 @@
   const PLAYER_KEY = 'daily-stat-clash.guest.player.v1';
   const ROUND_KEY = 'daily-stat-clash.guest.round.v1';
   const HISTORY_KEY = 'daily-stat-clash.guest.history.v1';
+  const ROSTER_VERSION_KEY = 'daily-stat-clash.guest.roster-version';
+  const ROSTER_VERSION = 'hxh-naruto-dc-marvel-witcher-jjk-aot-bleach-v1';
+  const UNIVERSES = [
+    'Hunter x Hunter','Naruto','DC','Marvel','The Witcher',
+    'Jujutsu Kaisen','Attack on Titan','Bleach'
+  ];
 
   const stats = [
     ['strength','STR','Strength','Raw physical power'],
@@ -110,8 +116,13 @@
     observedDay=day;
   }
   function portrait(id) {
-    if(!/^[a-z0-9-]+$/.test(id||''))return '';
-    return new URL('app/public/assets/portraits/'+id+'.svg',document.baseURI).href;
+    // Character names and stats are available, but franchise character artwork
+    // has not been licensed or included. Never show an unrelated portrait.
+    return '';
+  }
+  function initials(name) {
+    return (name||'').replace(/\([^)]*\)/g,'').trim().split(/\s+/).slice(0,2)
+      .map(word=>word[0]||'').join('').toUpperCase()||'✦';
   }
   function smallName(c) {
     return c && typeof c.name==='string' ? c.name:'Unknown fighter';
@@ -173,8 +184,11 @@
       $('portrait-fallback').hidden=true;
     } else {
       image.removeAttribute('src');image.alt='';image.hidden=true;
+      $('portrait-fallback').textContent=current?initials(current.name):'✦';
       $('portrait-fallback').hidden=false;
     }
+    const display=document.querySelector('.character-display');
+    if(display)display.dataset.universe=current?.universe||'';
     $('current-name').textContent=current?smallName(current):
       submitted?'Lineup locked.':
       active&&picks.length===6?'Ready to submit.':'A fighter is waiting.';
@@ -351,6 +365,14 @@
     });
   });
 
+  // A new franchise roster is a complete character-database reset.
+  // Retain the guest name, but remove picks and history that reference old IDs.
+  if(localStorage.getItem(ROSTER_VERSION_KEY)!==ROSTER_VERSION) {
+    localStorage.removeItem(ROUND_KEY);
+    localStorage.removeItem(HISTORY_KEY);
+    try { localStorage.setItem(ROSTER_VERSION_KEY,ROSTER_VERSION); }
+    catch { /* Private browsing may block persistent storage. */ }
+  }
   player=validPlayer(read(PLAYER_KEY))?read(PLAYER_KEY):null;
   ensureDay();
   render();
@@ -366,7 +388,9 @@
       if(!Array.isArray(data)||data.length<6)throw Error('The roster is incomplete.');
       roster=data.filter(c=>c&&/^[a-z0-9-]+$/.test(c.id||'') &&
         typeof c.name==='string' && typeof c.universe==='string');
-      if(roster.length!==101 || new Set(roster.map(c=>c.id)).size!==101)
+      const totals=UNIVERSES.map(u=>roster.filter(c=>c.universe===u).length);
+      if(roster.length!==160 || new Set(roster.map(c=>c.id)).size!==160 ||
+         totals.some(n=>n!==20))
         throw Error('Character roster validation failed.');
       // Never persist or expose scores: the guest build contains only public identities.
       const ids=new Map(roster.map(c=>[c.id,c]));
