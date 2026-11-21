@@ -1,0 +1,29 @@
+name: Test standalone game server
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'web/**'
+      - 'package.json'
+      - 'Dockerfile'
+      - '.github/workflows/test-node.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check client syntax
+        run: |
+          node --check web/app.js
+          node --check web/config.js
+      - name: Test server with real SQLite and live HTTP requests
+        run: npm test
