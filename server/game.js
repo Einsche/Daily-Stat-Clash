@@ -74,18 +74,38 @@ function makeGame({
       throw e;
     }
   }
-  const insertCharacter = db.prepare(
-    'INSERT OR IGNORE INTO characters ' +
-    '(id,name,universe,portrait_url,strength,dexterity,battle_iq,endurance,hacks,iq)' +
-    ' VALUES(?,?,?,?,?,?,?,?,?,?)'
-  );
-  write(() => {
-    for (const c of roster) {
-      const portrait = '/Daily-Stat-Clash/app/public/assets/portraits/' + c.id + '.svg';
-      insertCharacter.run(c.id,c.name,c.universe,portrait,
-        c.strength,c.dexterity,c.battle_iq,c.endurance,c.hacks,c.iq);
-    }
-  });
+  // Changing the roster must not leave obsolete cards, picks or match results.
+  // Preserve player accounts and their sessions, but reset the full game
+  // character catalog and match state in a single SQLite transaction.
+  const rosterHash = sha256(JSON.stringify(roster));
+  const storedVersion = db.prepare('SELECT value FROM game_meta WHERE key=?')
+    .get('character_roster_sha256')?.value;
+  const characterCount = db.prepare('SELECT count(*) AS n FROM characters').get().n;
+  if(storedVersion !== rosterHash || characterCount !== roster.length) {
+    const insertCharacter = db.prepare(
+      'INSERT INTO characters ' +
+      '(id,name,universe,portrait_url,strength,dexterity,battle_iq,endurance,hacks,iq)' +
+      ' VALUES(?,?,?,?,?,?,?,?,?,?)'
+    );
+    write(() => {
+      db.prepare('DELETE FROM matchups').run();
+      db.prepare('DELETE FROM daily_picks').run();
+      db.prepare('DELETE FROM daily_runs').run();
+      db.prepare('DELETE FROM settled_days').run();
+      db.prepare('DELETE FROM characters').run();
+      for (const c of roster) {
+        // Franchise-specific art is not present. Use the generic game icon
+        // rather than mislabeling a portrait from the previous original roster.
+        const portrait = typeof c.portrait_url === 'string' && c.portrait_url
+          ? c.portrait_url : '/Daily-Stat-Clash/favicon.svg';
+        insertCharacter.run(c.id,c.name,c.universe,portrait,
+          c.strength,c.dexterity,c.battle_iq,c.endurance,c.hacks,c.iq);
+      }
+      db.prepare('INSERT INTO game_meta(key,value) VALUES(?,?) ' +
+        'ON CONFLICT(key) DO UPDATE SET value=excluded.value')
+        .run('character_roster_sha256',rosterHash);
+    });
+  }
 
   const time = () => clock().getTime();
   const today = () => istanbulDay(clock());
