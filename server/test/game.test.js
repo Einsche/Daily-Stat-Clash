@@ -112,8 +112,15 @@ test('public HTTP frontend, API, login and strict CORS',async()=>{
     const home=await fetch(url+'/');
     const html=await home.text();
     assert.equal(home.status,200);
-    assert.ok(html.includes('USERNAME'));
+    assert.ok(html.includes('PLAY AS GUEST'));
+    assert.ok(!html.includes('SIGN IN'));
+    assert.ok(!html.includes('CREATE ACCOUNT'));
     assert.ok(!html.includes('EMAIL ADDRESS'));
+    const guestRosterResponse=await fetch(url+'/guest-roster.json');
+    assert.equal(guestRosterResponse.status,200);
+    const guestRoster=await guestRosterResponse.json();
+    assert.equal(guestRoster.length,101);
+    assert.ok(guestRoster.every(c=>c.strength===undefined&&c.hacks===undefined));
     const portrait=await fetch(url+'/app/public/assets/portraits/bren-pell.svg');
     assert.equal(portrait.status,200);
     assert.match(await portrait.text(),/<svg/);
