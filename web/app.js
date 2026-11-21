@@ -1,318 +1,382 @@
-/* Daily Stat Clash — independent username/password client for Node.js + SQLite */
+/* Daily Stat Clash — no-login guest mode. Browser-local daily picks, no fake online scoring. */
 (() => {
   'use strict';
-  const config = window.DAILY_CLASH_CONFIG || {};
-  const ready = Boolean(config.apiBase) || !window.location.hostname.endsWith('github.io');
-  const apiBase = String(config.apiBase || new URL('.', document.baseURI).href).replace(/\/+$/, '');
-  document.getElementById('server-notice').hidden=ready;
-  const sessionKey = 'daily-stat-clash.username-session.v2';
-  const stats = [
-    ['strength','STR','Strength','Raw physical power'],['dexterity','DEX','Dexterity','Speed & precision'],
-    ['battle_iq','BIQ','Battle IQ','Tactical intelligence'],['endurance','END','Endurance','Durability & stamina'],
-    ['hacks','HAX','Hacks','Special abilities'],['iq','IQ','IQ','Reasoning & intellect']
-  ];
+
   const $ = id => document.getElementById(id);
-  let mode = 'login';
-  let state = null;
-  let session = null;
-  let period = 'weekly';
-  let busy = false;
-  let toastTimer = 0;
-  const pending = document.createElement('button');
-  pending.id = 'draw-character';
-  pending.className = 'btn btn-primary draw-action';
-  pending.type = 'button';
-  pending.textContent = 'DRAW CHARACTER ↗';
-  document.querySelector('.draw-panel .character-details').append(pending);
+  const PLAYER_KEY = 'daily-stat-clash.guest.player.v1';
+  const ROUND_KEY = 'daily-stat-clash.guest.round.v1';
+  const HISTORY_KEY = 'daily-stat-clash.guest.history.v1';
 
-  const getSession = () => {
-    try {
-      const value = JSON.parse(localStorage.getItem(sessionKey) || 'null');
-      return value && /^[0-9a-f]{64}$/.test(value.token || '') ? value : null;
-    } catch { return null; }
-  };
-  const setSession = value => {
-    session = value && value.token ? {token: value.token, user: value.user || null} : null;
-    if (session) localStorage.setItem(sessionKey, JSON.stringify(session));
-    else localStorage.removeItem(sessionKey);
-  };
-  session = getSession();
+  const stats = [
+    ['strength','STR','Strength','Raw physical power'],
+    ['dexterity','DEX','Dexterity','Speed & precision'],
+    ['battle_iq','BIQ','Battle IQ','Tactical intelligence'],
+    ['endurance','END','Endurance','Durability & stamina'],
+    ['hacks','HAX','Hacks','Special abilities'],
+    ['iq','IQ','IQ','Reasoning & intellect']
+  ];
+  const adjectives = [
+    'Iron','Swift','Solar','Nova','Wild','Shadow','Lunar','Frost',
+    'Brave','Crimson','Golden','Storm','Echo','Blazing','Silent','Cosmic'
+  ];
+  const nouns = [
+    'Falcon','Raven','Knight','Wolf','Comet','Fox','Dragon','Hawk',
+    'Panda','Titan','Phoenix','Tiger','Viper','Rider','Saber','Otter'
+  ];
+  const drawButton = document.createElement('button');
+  drawButton.type='button';
+  drawButton.id='draw-character';
+  drawButton.className='btn btn-primary draw-action';
+  drawButton.textContent='DRAW CHARACTER ↗';
+  document.querySelector('.draw-panel .character-details').append(drawButton);
 
-  function notify(message, error=false) {
-    const el = $('notification'); el.textContent = message;
-    el.classList.toggle('is-error', error); el.hidden = false;
+  let player=null;
+  let round=null;
+  let roster=[];
+  let loaded=false;
+  let selectedPeriod='weekly';
+  let toastTimer=null;
+  let observedDay='';
+
+  function read(key) {
+    try {return JSON.parse(localStorage.getItem(key) || 'null');}
+    catch {return null;}
+  }
+  function store(key,value) {
+    try {localStorage.setItem(key,JSON.stringify(value));return true;}
+    catch {
+      notify('Browser storage is unavailable. Picks may disappear when you reload.',true);
+      return false;
+    }
+  }
+  function notify(message,isError=false) {
+    const node=$('notification');
+    node.textContent=message;
+    node.classList.toggle('is-error',!!isError);
+    node.hidden=false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(()=>{el.hidden=true;}, 5300);
+    toastTimer=setTimeout(()=>node.hidden=true,5000);
   }
-  function showError(e) { notify(e instanceof Error ? e.message : String(e),true); }
-  function shortDate(day) {
-    if (!day) return '—';
-    return new Date(day+'T12:00:00Z').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});
+  function el(tag,className,text) {
+    const node=document.createElement(tag);
+    if(className)node.className=className;
+    if(text!==undefined)node.textContent=String(text);
+    return node;
   }
-  function imgFor(c) {
-    const path = c && c.portrait_url;
-    if (!path || !/^\/Daily-Stat-Clash\/app\/public\/assets\/portraits\/[a-z0-9-]+\.svg$/.test(path)) return '';
-    return path;
+  function dayIstanbul() {
+    const parts=Intl.DateTimeFormat('en-GB',{
+      timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'
+    }).formatToParts(new Date());
+    const p=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+    return p.year+'-'+p.month+'-'+p.day;
   }
-  // Never trust localStorage for identity. The server verifies every bearer token.
-  // Passwords travel over HTTPS and are never stored in the browser.
-  async function rpc(name,body={}) {
-    if(!ready) throw Error('The game server has not been connected to this GitHub Pages site.');
-    const endpoints={
-      game_state:['GET','/api/state'],
-      game_leaderboard:['GET','/api/leaderboard'],
-      game_register:['POST','/api/auth/register'],
-      game_login:['POST','/api/auth/login'],
-      game_logout:['POST','/api/auth/logout'],
-      game_draw:['POST','/api/draw'],
-      game_assign:['POST','/api/assign'],
-      game_submit:['POST','/api/submit']
+  function rand(max) {
+    if(window.crypto && window.crypto.getRandomValues) {
+      const v=new Uint32Array(1);
+      window.crypto.getRandomValues(v);
+      return v[0]%max;
+    }
+    return Math.floor(Math.random()*max);
+  }
+  function generateName() {
+    return adjectives[rand(adjectives.length)]+
+      nouns[rand(nouns.length)]+'_'+String(rand(10000)).padStart(4,'0');
+  }
+  function newRound(day) {return {day,picks:[],current:null,submitted:false};}
+  function validPlayer(p) {
+    return p && typeof p.handle==='string' &&
+      /^[A-Za-z]{4,25}_[0-9]{4}$/.test(p.handle);
+  }
+  function normalizeRound(value,day) {
+    if(!value || value.day!==day || !Array.isArray(value.picks))return newRound(day);
+    const picks=value.picks.filter(p =>
+      p && stats.some(s=>s[0]===p.stat) &&
+      typeof p.character_id==='string' && /^[a-z0-9-]+$/.test(p.character_id)
+    ).slice(0,6);
+    if(new Set(picks.map(x=>x.stat)).size!==picks.length ||
+       new Set(picks.map(x=>x.character_id)).size!==picks.length) return newRound(day);
+    return {
+      day,picks,
+      current:value.current && /^[a-z0-9-]+$/.test(value.current.id||'') ? value.current:null,
+      submitted:value.submitted===true && picks.length===6
     };
-    const entry=endpoints[name];
-    if(!entry)throw Error('Unknown game operation.');
-    const [method,route]=entry;
-    let address=apiBase+route;
-    if(name==='game_leaderboard'){
-      address+='?period='+encodeURIComponent(body.p_period || 'weekly');
-    }
-    const requestBody=name==='game_register'||name==='game_login'
-      ? {username:body.p_handle,password:body.p_password}
-      : name==='game_assign'?{stat:body.p_stat}:{};
-    const headers={'Accept':'application/json'};
-    if(method==='POST')headers['Content-Type']='application/json';
-    if(session?.token)headers['Authorization']='Bearer '+session.token;
-    let response;
-    try {
-      response=await fetch(address,{
-        method,cache:'no-store',headers,
-        ...(method==='POST'?{body:JSON.stringify(requestBody)}:{})
-      });
-    }catch{
-      throw Error('Cannot reach the game server. Check the connection and try again.');
-    }
-    const result=await response.json().catch(()=>null);
-    if(!response.ok){
-      const error=Error(result?.error || 'Server request failed ('+response.status+').');
-      error.status=response.status;
-      throw error;
-    }
-    return result;
   }
-  function el(tag,cls,txt) {
-    const n=document.createElement(tag);
-    if(cls)n.className=cls;
-    if(txt!==undefined)n.textContent=String(txt);
-    return n;
+  function ensureDay() {
+    const day=dayIstanbul();
+    if(!round || round.day!==day) {
+      round=normalizeRound(read(ROUND_KEY),day);
+      store(ROUND_KEY,round);
+    }
+    observedDay=day;
   }
-  function updateAuthUi() {
-    const logged=Boolean(session && state?.user);
-    $('user-handle').hidden=!logged;
-    $('user-handle').textContent=logged?'@'+state.user.handle:'';
-    $('auth-toggle').innerHTML=logged?'SIGN OUT <span>↗</span>':'SIGN IN <span>↗</span>';
+  function portrait(id) {
+    if(!/^[a-z0-9-]+$/.test(id||''))return '';
+    return new URL('app/public/assets/portraits/'+id+'.svg',document.baseURI).href;
   }
-  function redraw() {
-    updateAuthUi();
-    const choices=state?.picks||[];
-    const current=state?.current||null;
-    const submitted=Boolean(state?.submitted);
-    $('count-characters').textContent=state?.totalCharacters??101;
-    $('count-players').textContent=state?.participants??'—';
-    $('today-label').textContent=state?.day?shortDate(state.day).toUpperCase():'ISTANBUL TIME';
-    $('progress-count').innerHTML=choices.length+' <span>/ 6</span>';
-    $('progress-fill').style.width=(choices.length/6*100)+'%';
-    const grid=$('stat-grid'); grid.replaceChildren();
-    for(const [id,abbr,label,description] of stats) {
-      const chosen=choices.find(p=>p.stat===id);
-      const slot=el('button','stat-slot'+(chosen?' filled':'')+(submitted?' locked':''));slot.type='button';
-      slot.disabled=Boolean(chosen||submitted||busy||!session);
-      const symbol=el('span','slot-symbol',abbr);
+  function smallName(c) {
+    return c && typeof c.name==='string' ? c.name:'Unknown fighter';
+  }
+
+  function render() {
+    ensureDay();
+    const active=!!player;
+    const picks=round.picks;
+    const current=round.current;
+    const submitted=round.submitted;
+    $('user-handle').hidden=!active;
+    $('user-handle').textContent=active?'@'+player.handle:'';
+    $('guest-start').textContent=active?'NEW RANDOM NAME ↻':'PLAY AS GUEST ↗';
+    $('count-characters').textContent=loaded?roster.length:'—';
+    $('count-players').textContent='—';
+    $('today-label').textContent=round.day;
+    $('progress-count').replaceChildren(
+      document.createTextNode(String(picks.length).padStart(2,'0')+' '),
+      el('span','','/ 6')
+    );
+    $('progress-fill').style.width=Math.round(picks.length/6*100)+'%';
+
+    const grid=$('stat-grid');
+    grid.replaceChildren();
+    for(const [id,abbreviation,label,description] of stats) {
+      const chosen=picks.find(p=>p.stat===id);
+      const slot=el('button','stat-slot'+(chosen?' filled':'')+(submitted?' locked':''));
+      slot.type='button';
+      slot.disabled=!!chosen || !active || !current || submitted || !loaded;
+      const symbol=el('span','slot-symbol',abbreviation);
       const content=el('span','slot-content');
-      content.append(el('strong','',label),el('small','',chosen?chosen.name:description));
+      content.append(
+        el('strong','',label),
+        el('small','',chosen?chosen.name:description)
+      );
       slot.append(symbol,content);
       if(chosen) {
-        const portrait=imgFor(chosen);
-        if(portrait){const im=el('img','slot-portrait');im.src=portrait;im.alt='';slot.append(im);}
+        const src=portrait(chosen.character_id);
+        if(src) {
+          const image=el('img','slot-portrait');
+          image.src=src;
+          image.alt='';
+          image.loading='lazy';
+          slot.append(image);
+        }
         slot.append(el('span','slot-tick','✓'));
-      } else slot.append(el('span','slot-plus',current?'+':'○'));
-      slot.addEventListener('click',()=>assign(id));
+      } else {
+        slot.append(el('span','slot-plus',current?'+':'○'));
+        slot.addEventListener('click',()=>assign(id));
+      }
       grid.append(slot);
     }
-    $('current-name').textContent=current?.name||(submitted?'Lineup locked.':choices.length===6?'Ready to submit.':'A fighter is waiting.');
-    $('current-world').textContent=current?.universe||(submitted?'TODAY IS COMPLETE':'THE ARENA AWAITS');
-    $('draw-description').textContent=current?'Choose one unused stat for this character. This choice cannot be undone.':
-      submitted?'Results will appear after the daily settlement at midnight.':
-      !session?'Sign in to reveal your next fighter.':choices.length===6?'Your six stat slots are filled. Submit your lineup.':
-      'Reveal your next randomly selected character.';
-    const portrait=$('current-portrait');
-    const src=imgFor(current);
-    if(src){portrait.src=src;portrait.alt=current.name;portrait.hidden=false;$('portrait-fallback').hidden=true;}
-    else{portrait.removeAttribute('src');portrait.hidden=true;$('portrait-fallback').hidden=false;}
-    $('draw-number').textContent='DRAW '+String(Math.min(choices.length+1,6)).padStart(2,'0')+' / 06';
-    $('draw-character').hidden=Boolean(current||submitted||choices.length===6);
-    $('draw-character').disabled=busy||!session||!ready;
-    $('draw-character').textContent=!session?'SIGN IN TO DRAW ↗':'DRAW CHARACTER ↗';
-    $('draw-note').textContent=submitted?'LINEUP SUBMITTED':current?'CHOOSE A STAT TO CONTINUE':'STATS HIDDEN UNTIL MATCHUP';
-    $('lineup-status').textContent=submitted?'Your lineup is submitted and locked.':
-      !session?'Sign in to begin today’s challenge.':current?'Assign the drawn character to an available stat.':
-      choices.length===6?'All six slots are assigned. Submit your lineup.':
-      'Draw '+(6-choices.length)+' more character'+(choices.length===5?'':'s')+'.';
-    $('submit-lineup').disabled=busy||submitted||choices.length!==6||!ready;
-    drawHistory();
-  }
-  function drawHistory() {
-    const holder=$('history-list');holder.replaceChildren();
-    if(!session) {holder.append(el('div','empty-state','Sign in to view your results and past opponents.'));return;}
-    const records=state?.history||[];
-    if(!records.length) {holder.append(el('div','empty-state','No settled matches yet. Submit today’s lineup and check back after midnight.'));return;}
-    for(const h of records) {
-      const row=el('div','history-row');
-      row.append(el('span','history-day',shortDate(h.day)));
-      row.append(el('strong','history-rival','vs '+h.opponent));
-      row.append(el('span','history-score',h.self_points+' — '+h.opponent_points));
-      const outcome=h.self_points>h.opponent_points?'WIN':h.self_points<h.opponent_points?'LOSS':'DRAW';
-      row.append(el('span','history-outcome '+outcome.toLowerCase(),outcome));
-      const toggle=el('button','history-detail-button','DETAILS ▾');
-      const detail=el('div','history-breakdown');
-      detail.hidden=true;
-      const by=stats.map(x=>x[0]);
-      for(const d of h.details||[]) {
-        const left=h.reversed?d.b:d.a,right=h.reversed?d.a:d.b;
-        detail.append(el('span','',stats[by.indexOf(d.stat)]?.[2]||d.stat),
-          el('span','',String(left)+' — '+String(right)));
-      }
-      toggle.onclick=()=>{detail.hidden=!detail.hidden;};
-      row.append(toggle,detail);
-      holder.append(row);
+
+    const image=$('current-portrait');
+    const src=current?portrait(current.id):'';
+    if(src) {
+      image.src=src;image.alt=smallName(current);image.hidden=false;
+      $('portrait-fallback').hidden=true;
+    } else {
+      image.removeAttribute('src');image.alt='';image.hidden=true;
+      $('portrait-fallback').hidden=false;
     }
+    $('current-name').textContent=current?smallName(current):
+      submitted?'Lineup locked.':
+      active&&picks.length===6?'Ready to submit.':'A fighter is waiting.';
+    $('current-world').textContent=current?current.universe:
+      submitted?'GUEST ROUND COMPLETE':'THE ARENA AWAITS';
+    $('draw-description').textContent=current?
+      'Assign this fighter to one unused stat. Each character can be used only once.':
+      submitted?'Your six picks are saved in this browser until the next day.':
+      !active?'Press Play as Guest to get a random player name and begin.':
+      picks.length===6?'Your six stat slots are full. Submit your lineup.':
+      !loaded?'Loading the character roster…':'Draw your next randomly selected character.';
+    $('draw-number').textContent=submitted?'SUBMITTED':
+      'DRAW '+String(Math.min(picks.length+1,6)).padStart(2,'0')+' / 06';
+    drawButton.hidden=!!current || submitted || picks.length>=6;
+    drawButton.disabled=!active || !loaded;
+    drawButton.textContent=!active?'PLAY AS GUEST FIRST ↗':
+      !loaded?'LOADING CHARACTERS…':'DRAW CHARACTER ↗';
+    $('draw-note').textContent=submitted?'SAVED ON THIS DEVICE':
+      current?'CHOOSE A STAT TO CONTINUE':'SCORES HIDDEN IN GUEST MODE';
+    $('lineup-status').textContent=submitted?'Your lineup is saved and locked for today.':
+      !active?'Press Play as Guest to start without an account.':
+      !loaded?'Loading characters…':
+      current?'Assign the drawn character to an available stat.':
+      picks.length===6?'All six slots assigned. Submit your lineup.':
+      'Draw '+(6-picks.length)+' more character'+(picks.length===5?'':'s')+'.';
+    $('submit-lineup').disabled=!active || !loaded || submitted ||
+      picks.length!==6 || !!current;
+    $('submit-lineup').textContent=submitted?'LINEUP SAVED ✓':'SUBMIT LINEUP ↗';
+    renderHistory();
+    renderLeaderboard();
   }
-  async function drawBoard() {
-    const holder=$('leaderboard-rows');
-    holder.replaceChildren(el('div','empty-state',ready?'Loading rankings…':'Leaderboard will appear when the backend is connected.'));
-    if(!ready)return;
-    try{
-      const leaders=await rpc('game_leaderboard',{p_period:period});
-      if(!Array.isArray(leaders)||!leaders.length){holder.replaceChildren(el('div','empty-state','Be the first challenger.'));return;}
-      holder.replaceChildren();
-      for(const person of leaders) {
-        const row=el('div','leaderboard-row');
-        const player=el('span','board-player');player.append(el('span','board-rank','#'+person.rank),el('strong','',person.handle));
-        row.append(player,el('span','board-matches',person.matches),el('strong','board-score',person.score));
-        holder.append(row);
-      }
-    }catch(e){holder.replaceChildren(el('div','empty-state',e.message||'Leaderboard unavailable.'));}
+
+  function startGuest() {
+    const old=player?.handle;
+    let name=generateName();
+    while(name===old) name=generateName();
+    player={handle:name,createdAt:Date.now()};
+    store(PLAYER_KEY,player);
+    render();
+    notify(old?'New guest name: '+name+' · Today’s picks are preserved.':
+      'You are now '+name+'! Draw your first fighter.');
+    if(!old)document.getElementById('arena').scrollIntoView({behavior:'smooth',block:'start'});
   }
-  async function loadState() {
-    if(!ready){redraw();drawBoard();notify('The GitHub Pages frontend needs a game-server URL. The Node.js version works independently.',true);return;}
-    try {
-      state=await rpc('game_state');
-      if(session && !state?.user) {
-        setSession(null);
-        notify('Session expired. Please sign in again.',true);
-      }
-      redraw();await drawBoard();
-    } catch(e) {
-      if(e.status===401){
-        setSession(null);
-        state=null;
-        notify('Your session has expired. Please sign in again.',true);
-        try{state=await rpc('game_state');}catch{}
-        redraw();await drawBoard();return;
-      }
-      showError(e);redraw();
-    }
-  }
-  async function action(name,args={}) {
-    if(busy)return;
-    busy=true;redraw();
-    try{state=await rpc(name,args);notify(name==='game_submit'?'Lineup submitted successfully.':'Choice saved.');}
-    catch(e){showError(e);}
-    finally{busy=false;redraw();}
+
+  function draw() {
+    if(!player) {startGuest();return;}
+    if(!loaded) {notify('Characters are still loading. Try again.',true);return;}
+    ensureDay();
+    if(round.submitted || round.current || round.picks.length===6)return;
+    const used=new Set(round.picks.map(p=>p.character_id));
+    const available=roster.filter(c=>!used.has(c.id));
+    if(!available.length){notify('No characters left to draw.',true);return;}
+    round.current=available[rand(available.length)];
+    store(ROUND_KEY,round);
+    render();
   }
   function assign(stat) {
-    if(!session){openAuth('login');return;}
-    if(!state?.current){notify('Draw a character first.',true);return;}
-    action('game_assign',{p_stat:stat});
+    ensureDay();
+    if(!player||!loaded||round.submitted||!round.current)return;
+    if(!stats.some(x=>x[0]===stat) || round.picks.some(p=>p.stat===stat))return;
+    const card=roster.find(c=>c.id===round.current.id);
+    if(!card)return;
+    if(round.picks.some(p=>p.character_id===card.id))return;
+    round.picks.push({
+      stat,
+      character_id:card.id,
+      name:card.name,
+      universe:card.universe
+    });
+    round.current=null;
+    store(ROUND_KEY,round);
+    render();
   }
-  function openAuth(kind) {
-    mode=kind||'login';authMode();
-    const dialog=$('auth-dialog');
-    if(!dialog.open)dialog.showModal();
+  function openConfirm() {
+    ensureDay();
+    if(!player || round.submitted || round.picks.length!==6 || round.current)return;
+    $('confirm-backdrop').hidden=false;
   }
-  function authMode() {
-    const signup=mode==='register';
-    $('auth-title').textContent=signup?'Join the arena.':'Welcome back.';
-    $('auth-hint').textContent=signup?'Choose a unique username and password. No email required.':'Enter your username and password to continue.';
-    $('signup-handle-wrap').hidden=false;
-    $('signup-handle').required=true;
-    $('auth-password').autocomplete=signup?'new-password':'current-password';
-    $('auth-submit').textContent=signup?'CREATE ACCOUNT ↗':'SIGN IN ↗';
-    $('auth-switch-prefix').textContent=signup?'Already have an account?':'New to the arena?';
-    $('auth-switch').textContent=signup?'Sign in':'Create an account';
-    $('auth-error').hidden=true;
+  function submit() {
+    $('confirm-backdrop').hidden=true;
+    ensureDay();
+    if(!player||round.submitted||round.current||round.picks.length!==6)return;
+    if(new Set(round.picks.map(p=>p.stat)).size!==6 ||
+       new Set(round.picks.map(p=>p.character_id)).size!==6)return;
+    round.submitted=true;
+    store(ROUND_KEY,round);
+    const history=read(HISTORY_KEY);
+    const entries=Array.isArray(history)?history.filter(x=>x&&x.day!==round.day):[];
+    entries.push({
+      day:round.day,
+      handle:player.handle,
+      picks:round.picks.map(p=>({...p}))
+    });
+    entries.sort((a,b)=>b.day.localeCompare(a.day));
+    store(HISTORY_KEY,entries.slice(0,90));
+    render();
+    notify('Your six selections have been saved! Global results are not active in guest mode.');
   }
-  async function submitAuth(event) {
-    event.preventDefault();
-    if(!ready){
-      $('auth-error').textContent='Game server not connected yet. Use the public Node.js deployment.';
-      $('auth-error').hidden=false;return;
+
+  function renderLeaderboard() {
+    const root=$('leaderboard-rows');
+    root.replaceChildren(el('div','empty-state',
+      selectedPeriod==='weekly'?'Weekly global rankings are unavailable in guest mode.':
+      selectedPeriod==='monthly'?'Monthly global rankings are unavailable in guest mode.':
+      'All-time global rankings are unavailable in guest mode.'));
+  }
+  function renderHistory() {
+    const root=$('history-list');
+    root.replaceChildren();
+    const entries=read(HISTORY_KEY);
+    if(!Array.isArray(entries)||!entries.length) {
+      root.append(el('div','empty-state',
+        'No local guest submissions yet. Finish your six-character lineup to save one.'));
+      return;
     }
-    const username=$('signup-handle').value.trim();
-    const password=$('auth-password').value;
-    const error=$('auth-error');
-    error.hidden=true;
-    if(!/^[A-Za-z0-9_-]{3,22}$/.test(username)){
-      error.textContent='Username must be 3–22 letters, numbers, _ or -.';
-      error.hidden=false;return;
+    for(const entry of entries.slice(0,30)) {
+      if(!entry || typeof entry.day!=='string'||!Array.isArray(entry.picks))continue;
+      const row=el('div','history-row');
+      row.append(
+        el('span','history-day',entry.day),
+        el('strong','history-rival',entry.handle||'Guest'),
+        el('span','history-score',entry.picks.length+'/6 picks'),
+        el('span','history-outcome win','SAVED')
+      );
+      const detail=el('div','history-breakdown');
+      detail.hidden=true;
+      for(const p of entry.picks) {
+        const label=stats.find(x=>x[0]===p.stat)?.[2]||p.stat;
+        detail.append(el('span','',label),el('span','',p.name||''));
+      }
+      const toggle=el('button','history-detail-button','VIEW PICKS ▾');
+      toggle.type='button';
+      toggle.addEventListener('click',()=>{detail.hidden=!detail.hidden;});
+      row.append(toggle,detail);
+      root.append(row);
     }
-    if(new TextEncoder().encode(password).length<10 || new TextEncoder().encode(password).length>72){
-      error.textContent='Password must be 10–72 bytes.';
-      error.hidden=false;return;
+  }
+  function tick() {
+    const day=dayIstanbul();
+    if(day!==observedDay){
+      ensureDay();
+      render();
     }
-    $('auth-submit').disabled=true;
-    try {
-      const isNew=mode==='register';
-      const data=await rpc(isNew?'game_register':'game_login',{
-        p_handle:username,p_password:password
-      });
-      if(!data?.token)throw Error('The account server did not return a session.');
-      setSession(data);
-      $('auth-password').value='';
-      $('auth-dialog').close();
-      notify(isNew?'Your account has been created. Welcome!':'Signed in successfully.');
-      await loadState();
-    } catch(e) {
-      error.textContent=e.message||String(e);error.hidden=false;
-    } finally {$('auth-submit').disabled=false;}
+    const [year,month,date]=day.split('-').map(Number);
+    const nextMidnightUtc=Date.UTC(year,month-1,date,21,0,0);
+    const seconds=Math.max(0,Math.floor((nextMidnightUtc-Date.now())/1000));
+    const hh=String(Math.floor(seconds/3600)).padStart(2,'0');
+    const mm=String(Math.floor(seconds/60)%60).padStart(2,'0');
+    const ss=String(seconds%60).padStart(2,'0');
+    $('countdown').textContent=hh+' : '+mm+' : '+ss;
   }
-  async function signOut() {
-    if(session&&ready){try{await rpc('game_logout');}catch{/* Local sign-out still completes */}}
-    setSession(null);state=null;redraw();await loadState();notify('Signed out.');
-  }
-  function tickCountdown(){
-    const now=new Date();
-    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
-    const obj=Object.fromEntries(parts.map(x=>[x.type,x.value]));
-    const midnight=Date.parse(obj.year+'-'+obj.month+'-'+obj.day+'T21:00:00Z');
-    let seconds=Math.max(0,Math.floor((midnight-Date.now())/1000));
-    const h=Math.floor(seconds/3600);seconds%=3600;
-    const m=Math.floor(seconds/60);const s=seconds%60;
-    $('countdown').textContent=[h,m,s].map(x=>String(x).padStart(2,'0')).join(' : ');
-  }
-  $('auth-toggle').addEventListener('click',()=>session?signOut():openAuth('login'));
-  $('auth-switch').addEventListener('click',()=>{mode=mode==='login'?'register':'login';authMode();});
-  $('close-auth').addEventListener('click',()=>$('auth-dialog').close());
-  $('auth-form').addEventListener('submit',submitAuth);
-  $('auth-dialog').addEventListener('click',e=>{if(e.target===$('auth-dialog'))$('auth-dialog').close();});
-  $('draw-character').addEventListener('click',()=>session?action('game_draw'):openAuth('login'));
-  $('submit-lineup').addEventListener('click',()=>{$('confirm-backdrop').hidden=false;});
+
+  $('guest-start').addEventListener('click',startGuest);
+  drawButton.addEventListener('click',draw);
+  $('submit-lineup').addEventListener('click',openConfirm);
   $('confirm-cancel').addEventListener('click',()=>{$('confirm-backdrop').hidden=true;});
-  $('confirm-submit').addEventListener('click',()=>{$('confirm-backdrop').hidden=true;action('game_submit');});
-  document.querySelectorAll('.board-tab').forEach(btn=>btn.addEventListener('click',()=>{
-    period=btn.dataset.period;document.querySelectorAll('.board-tab').forEach(t=>t.classList.toggle('active',t===btn));drawBoard();
-  }));
-  tickCountdown();setInterval(tickCountdown,1000);
-  const localDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-  let trackedDay=localDay();
-  setInterval(()=>{const next=localDay();if(next!==trackedDay){trackedDay=next;loadState();}},15000);
-  (async()=>{await loadState();})();
+  $('confirm-submit').addEventListener('click',submit);
+  $('confirm-backdrop').addEventListener('click',event=>{
+    if(event.target===$('confirm-backdrop'))$('confirm-backdrop').hidden=true;
+  });
+  document.querySelectorAll('.board-tab').forEach(button=>{
+    button.addEventListener('click',()=>{
+      selectedPeriod=button.dataset.period;
+      document.querySelectorAll('.board-tab').forEach(tab=>
+        tab.classList.toggle('active',tab===button));
+      renderLeaderboard();
+    });
+  });
+
+  player=validPlayer(read(PLAYER_KEY))?read(PLAYER_KEY):null;
+  ensureDay();
+  render();
+  tick();
+  setInterval(tick,1000);
+
+  fetch(new URL('guest-roster.json',document.baseURI),{cache:'no-cache'})
+    .then(response=>{
+      if(!response.ok)throw Error('Character roster request failed ('+response.status+').');
+      return response.json();
+    })
+    .then(data=>{
+      if(!Array.isArray(data)||data.length<6)throw Error('The roster is incomplete.');
+      roster=data.filter(c=>c&&/^[a-z0-9-]+$/.test(c.id||'') &&
+        typeof c.name==='string' && typeof c.universe==='string');
+      if(roster.length!==101 || new Set(roster.map(c=>c.id)).size!==101)
+        throw Error('Character roster validation failed.');
+      // Never persist or expose scores: the guest build contains only public identities.
+      const ids=new Map(roster.map(c=>[c.id,c]));
+      round.picks=round.picks.map(p=>{
+        const c=ids.get(p.character_id);
+        return c?{stat:p.stat,character_id:c.id,name:c.name,universe:c.universe}:null;
+      }).filter(Boolean);
+      if(round.current)round.current=ids.get(round.current.id)||null;
+      if(round.submitted && round.picks.length!==6)round.submitted=false;
+      store(ROUND_KEY,round);
+      loaded=true;
+      render();
+    })
+    .catch(error=>{
+      loaded=false;
+      render();
+      notify('Unable to load the character roster. Refresh the page to retry.',true);
+      console.error(error);
+    });
 })();
