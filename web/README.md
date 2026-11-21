@@ -1,14 +1,23 @@
-# GitHub Pages + Supabase deployment
+# Standalone GitHub Pages + Supabase deployment
 
-This folder is a standalone static app; it does not connect to Higgsfield.
-GitHub Pages hosts its UI, Supabase Auth and PostgreSQL handle accounts and scores.
+This is an independent static frontend: it does not use Higgsfield.
 
-1. Create a Supabase project you control.
-2. In Supabase SQL Editor run `supabase/schema.sql` and then `supabase/seed.sql`. Optionally run `supabase/schedule.sql` to settle at Istanbul midnight; without cron the next state read reconciles the prior day.
-3. Set email/password auth in Supabase, and under Authentication > URL Configuration set **Site URL** to `https://einsche.github.io/Daily-Stat-Clash/` and add it to allowed redirect URLs.
-4. Edit `web/config.js` with Supabase Project URL and **publishable/anon** public key only. Do not commit a service_role key, JWT secret or DB password.
-5. In GitHub repository Settings > Pages, choose **Deploy from a branch**, `main`, `/docs` if you publish this folder to docs, or configure GitHub Actions to publish the `web` directory. The delivered `web` directory has a Pages deployment workflow `.github/workflows/pages.yml` to do that once Pages is enabled.
-6. Open `https://einsche.github.io/Daily-Stat-Clash/` and test registration, email confirmation (if enabled), login, six picks, submit, and next-day settlement.
+**Frontend:** GitHub Pages, with `web/index.html`, `web/app.js`, `web/styles.css`.
+**Backend:** Supabase Auth and PostgreSQL RPC functions for accounts, draws, submissions, daily head-to-head scoring, match history and leaderboards.
 
-Security: Characters' secret stats are in the `game_private` schema, not selectable from the browser. Nevertheless the original values remain in publicly visible Git history. Rotate scores and private seeds before competitive launch.
-Status: Neither a Supabase account nor a live Pages deployment is connected here, so real sign-up is unverified.
+## Setup
+
+1. Enable **GitHub Actions** as the source under [GitHub Settings → Pages](https://github.com/Einsche/Daily-Stat-Clash/settings/pages). This is mandatory: GitHub's API denied automatic Pages enablement with the current integration token.
+2. [Rerun the Pages publishing workflow](https://github.com/Einsche/Daily-Stat-Clash/actions/workflows/pages.yml). The action copies all 101 portraits from `app/public/assets/portraits` into the Pages artifact, preserving their URL paths.
+3. Create/connect a Supabase project. Run `supabase/schema.sql` followed by `supabase/seed.sql` in the SQL editor. Then run `supabase/schedule.sql` to enable automatic settlement at **21:00 UTC / 00:00 Europe/Istanbul**. The fallback in `game_state` settles yesterday when a user next loads the game.
+4. Enable email/password under Supabase Authentication → Providers → Email. Set Supabase Authentication → URL Configuration Site URL and redirect allow-list to `https://einsche.github.io/Daily-Stat-Clash/`.
+5. In `web/config.js` fill in the Supabase Project URL and the **public publishable/anon** key. These are client-facing values. Never put a service-role key, database password, JWT secret or personal access token in that file.
+6. Test in a private browsing window and normal window: account registration, email confirmation (if enabled), login, a six-character round, submit, another user's round, next-day settlement and rankings.
+
+The application URL will be **https://einsche.github.io/Daily-Stat-Clash/** once GitHub Pages has published successfully.
+
+## Security and limitations
+
+The SQL backend stores secret stats in `game_private`, protects them with database roles and only returns allowed metadata via RPC. Auth is handled by Supabase GoTrue. However, the numerical ratings are visible in this public repository's seed and Git history; rotate ratings to a private-only scoring source before a competitive launch.
+
+Current status: Frontend and SQL source are ready; the site is not publicly deployed, and sign-up cannot be tested until a Supabase project and Pages site are configured.
