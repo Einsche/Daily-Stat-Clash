@@ -8,7 +8,6 @@ COPY package.json ./
 COPY server ./server
 COPY web ./web
 COPY app/src/data/characters.json ./app/src/data/characters.json
-COPY app/public/assets/portraits ./app/public/assets/portraits
 EXPOSE 3000
 VOLUME ["/data"]
 CMD ["node","server/index.js"]
