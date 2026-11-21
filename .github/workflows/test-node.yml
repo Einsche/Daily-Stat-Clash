@@ -34,9 +34,17 @@ jobs:
           docker build -t daily-stat-clash:ci .
           docker run -d --name daily-stat-clash-ci -p 127.0.0.1:35123:3000 daily-stat-clash:ci
           trap 'docker logs daily-stat-clash-ci || true; docker rm -f daily-stat-clash-ci || true' EXIT
-          curl --fail --silent --show-error --retry 12 --retry-delay 1 \
-            --retry-connrefused http://127.0.0.1:35123/Daily-Stat-Clash/api/health
-          echo
+          ready=0
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --max-time 3 \
+              http://127.0.0.1:35123/Daily-Stat-Clash/api/health >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+          echo "Container started successfully."
           curl --fail --silent --show-error --output /dev/null \
             http://127.0.0.1:35123/Daily-Stat-Clash/
           curl --fail --silent --show-error --output /dev/null \
