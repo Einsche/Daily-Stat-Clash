@@ -56,11 +56,11 @@ jobs:
           test "$count" = 101
           password="ExampleStrongPassword12"
           token=$(pg "select public.game_register('TestPlayer01','$password')->>'token'")
-          test "\${#token}" -eq 64
+          test "${#token}" -eq 64
           test "$(pg "select public.game_register('testplayer01','AnotherStrongPassword12')->>'error'")" = 'This username is taken.'
           test "$(pg "select public.game_login('TestPlayer01','wrongpassword')->>'error'")" = 'Invalid username or password.'
           token2=$(pg "select public.game_login('testplayer01','$password')->>'token'")
-          test "\${#token2}" -eq 64
+          test "${#token2}" -eq 64
           test "$(pg "select public.game_state('$token2')->'user'->>'handle'")" = 'TestPlayer01'
           for stat in strength dexterity battle_iq endurance hacks iq; do
             pg "select public.game_draw('$token2')->'current'->>'id'" >/dev/null
