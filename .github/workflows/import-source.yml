@@ -19,9 +19,8 @@ jobs:
           set -euo pipefail
           curl --fail --location --retry 3 --silent --show-error             'https://d2ol7oe51mr4n9.cloudfront.net/user_3JrekHJTeQjSngacKtlGbd28pKj/c8073ec9-2ed7-4188-a510-8af03b91337f.zip'             --output /tmp/daily-stat-clash-source.zip
           printf '%s  %s\n'             'b93b1f473db3e38de86751b49135f5be43872b74194236d334c9ec5c11b59f49'             '/tmp/daily-stat-clash-source.zip' | sha256sum --check -
-          unzip -oq /tmp/daily-stat-clash-source.zip -d .
+          unzip -oq /tmp/daily-stat-clash-source.zip -d . -x '.github/workflows/*'
           find app -type f -name '*.woff2' -delete
-          rm -f .github/workflows/import-source.yml
           cat > README.md <<'EOF'
           # Daily Stat Clash
 
@@ -34,7 +33,7 @@ jobs:
 
           - Application: `app/` — React 19, TanStack Start, Cloudflare Workers.
           - Database: `app/migrations/` — Cloudflare D1 / SQLite.
-          - Daily settlement: `.github/workflows/daily-settlement.yml`.
+          - Daily settlement: configured after a public host is deployed.
           - Character roster generator: `app/scripts/generate_roster.py`.
           - Full project details: `app/README.md`.
 
