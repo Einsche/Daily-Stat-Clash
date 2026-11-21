@@ -1,34 +1,66 @@
 # Daily Stat Clash
 
-Six characters. Six hidden stats. One daily matchup. Public multiplayer browser game.
+A publicly accessible daily character-stat matchup game. Players register with a username and password, then choose six unique fighters across six hidden-stat categories. Submitted lineups are paired after midnight in Istanbul and saved on an all-time leaderboard.
 
-## Architecture
+## Public frontend
 
-- **Public frontend:** `web/` — mobile/desktop interface hosted on GitHub Pages
-- **Account registration/login:** USERNAME + PASSWORD ONLY; no email, no confirmation link
-- **Database/API:** `supabase/schema.sql` — PostgreSQL with bcrypt password hashes, expiring opaque sessions and protected RPC operations
-- **Game:** six distinct character draws, hidden stats, submission lock, Istanbul midnight matching, history, weekly/monthly/all-time rankings
-- **Content:** `supabase/seed.sql` contains 101 original fantasy characters, across 12 original worlds
-- **Midnight scheduler:** `supabase/schedule.sql` (requires pg_cron)
-- **Source:** `app/` preserves the earlier Higgsfield/Cloudflare Worker implementation, which is *not* the backend used by the independent version
+[Open the GitHub Pages interface](https://einsche.github.io/Daily-Stat-Clash/)
 
-## Activate the public site
+The static frontend is publicly available. **Registration and login will not become functional until the standalone game server is deployed and connected to the frontend.** A static GitHub Pages repository cannot safely host shared user accounts or a persistent database.
 
-1. In [GitHub → Settings → Pages](https://github.com/Einsche/Daily-Stat-Clash/settings/pages) select **GitHub Actions** as the publishing source. The existing [Pages workflow](https://github.com/Einsche/Daily-Stat-Clash/actions/workflows/pages.yml) builds the public site and copies all 101 portraits. GitHub denied automatic enablement via its Actions installation, so an account owner must make this setting.
-2. Create/connect a Supabase project. No Supabase Auth email configuration is required. Execute `supabase/schema.sql`, then `supabase/seed.sql`, and optionally `supabase/schedule.sql` in the SQL editor.
-3. Populate `web/config.js` with that project's URL and *publishable/anon* key (public client credentials). NEVER publish a database password, service_role key, JWT signing secret or GitHub PAT.
-4. Open `https://einsche.github.io/Daily-Stat-Clash/` once GitHub Pages is deployed, and test username-only signup and login, picks, submit and settlements using two accounts.
+## Production architecture — no Supabase
 
-See [web/README.md](web/README.md) for the deployment checklist.
+- `web/`: GitHub Pages interface, responsive desktop/mobile layout.
+- `server/index.js`: Node.js HTTP server and REST API; also hosts the same interface directly at `/Daily-Stat-Clash/`.
+- `server/game.js`: username/password accounts, scrypt password hashing, 256-bit session tokens, daily picks, UTC+3 settlement and leaderboards.
+- `server/schema.sql`: local persistent SQLite database schema.
+- `server/test/game.test.js`: live HTTP and database integration tests.
+- `Dockerfile` and `railway.json`: deployment on Railway with a persistent SQLite volume.
+- `app/`: archived source of the original TanStack/Cloudflare implementation and the 101 character definitions/portraits. Not used as the live backend.
 
-### Account behavior
+**There is no external authentication provider, no Supabase and no email requirement.**
 
-Registration requires a unique username (3–22 ASCII letters, numbers, underscore or hyphen) and a password (10–72 UTF-8 bytes). Passwords use bcrypt cost 12 in PostgreSQL. The browser stores only a random 256-bit session token; the database stores its hash. Sessions expire after 30 days and are revoked at sign-out. Repeated failed password attempts trigger a temporary lockout. **No email means there is no self-service password recovery.**
+## Go live on Railway
 
-### Deployment status
+A secure shared login requires an always-on server with a writable persistent volume. Railway is the recommended hosting provider for this code.
 
-The username-only UI and backend SQL have been committed, and the independent frontend's automated syntax and content checks pass. **The service is not live until GitHub Pages is enabled and a Supabase project is connected and seeded.**
+1. Connect a Railway account and link the GitHub repository `Einsche/Daily-Stat-Clash`.
+2. Deploy from the repository root using the provided `Dockerfile`.
+3. Attach a **persistent volume** at `/data` and set environment variable `DB_PATH=/data/daily-stat-clash.sqlite`. The database must never live solely on an ephemeral container filesystem.
+4. Set `PUBLIC_WEB_ORIGIN=https://einsche.github.io` to allow the GitHub Pages frontend to call the Railway API. Generate a public Railway service domain and enable HTTPS.
+5. The Railway service will host the complete game at `https://<YOUR-RAILWAY-DOMAIN>/Daily-Stat-Clash/` and expose API endpoints under `/Daily-Stat-Clash/api/`.
+6. Edit `web/config.js`: `apiBase: 'https://<YOUR-RAILWAY-DOMAIN>/Daily-Stat-Clash'` (no trailing slash). GitHub Pages will then support registration/login against the same server.
 
-### Pre-launch security
+Note: `<YOUR-RAILWAY-DOMAIN>` is a placeholder; use the real public domain assigned by Railway, not a guessed URL. Railway may require an account and payment method.
 
-PostgreSQL table access is not public; the browser receives only allowed results from restricted RPC functions. However, the current character ratings are in this public repository's seed and Git history, so players can discover them. Replace with a PRIVATE seed before any competitive public launch. Add request/IP rate limiting, abuse monitoring and bot protection for a larger audience.
+[Deployment details](server/README.md) · [Frontend configuration](web/README.md)
+
+## Authentication
+
+Registration uses a unique username (3–22 ASCII letters/digits/underscore/hyphen) and a password (10–72 UTF-8 bytes). Passwords are stored using scrypt with per-account random salts, not plaintext. The database stores only SHA-256 hashes of random 256-bit session tokens. Login attempts are throttled and sessions expire after 30 days.
+
+Email is neither requested nor used. There is no automatic forgotten-password recovery, so users need to remember their passwords. For broad public release, an admin-assisted or recovery-code flow and stronger abuse protection should be added.
+
+## Daily game rules
+
+- 101 original fictional characters in 12 worlds.
+- One randomly drawn character at a time; assign it to an unused stat.
+- Stats: Strength, Dexterity, Battle IQ, Endurance, Hacks, IQ.
+- Submit all six choices to lock in the lineup for the Istanbul day.
+- Players are paired deterministically at midnight (00:00 Europe/Istanbul); the greater hidden value wins +1 per stat, ties award no point.
+- If the number of participants is odd, one player receives a bye (no score that day).
+- Weekly, monthly and all-time rankings plus match history persist in SQLite.
+- Settlement retries automatically after an outage.
+
+## Test locally
+
+Node.js 24 or later:
+
+```sh
+npm test
+DB_PATH=./data/daily-stat-clash.sqlite npm start
+```
+
+Open [http://localhost:3000/Daily-Stat-Clash/](http://localhost:3000/Daily-Stat-Clash/). The test suite uses temporary SQLite databases and does not touch production accounts.
+
+Security caveat: the original scores are visible in the public Git repository's character dataset and earlier history. Before a competitive release, replace the public scoring seed with confidential scoring data. Do not commit live passwords, session tokens, volumes, or database files.
