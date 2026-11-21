@@ -1,36 +1,34 @@
 # Daily Stat Clash
 
-Six characters. Six hidden stats. One daily matchup.
+Six characters. Six hidden stats. One daily matchup. Public multiplayer browser game.
 
-Source repository for the Daily Stat Clash character-stat web game.
+## Architecture
 
-## Independent web app
+- **Public frontend:** `web/` — mobile/desktop interface hosted on GitHub Pages
+- **Account registration/login:** USERNAME + PASSWORD ONLY; no email, no confirmation link
+- **Database/API:** `supabase/schema.sql` — PostgreSQL with bcrypt password hashes, expiring opaque sessions and protected RPC operations
+- **Game:** six distinct character draws, hidden stats, submission lock, Istanbul midnight matching, history, weekly/monthly/all-time rankings
+- **Content:** `supabase/seed.sql` contains 101 original fantasy characters, across 12 original worlds
+- **Midnight scheduler:** `supabase/schedule.sql` (requires pg_cron)
+- **Source:** `app/` preserves the earlier Higgsfield/Cloudflare Worker implementation, which is *not* the backend used by the independent version
 
-- **GitHub Pages frontend:** `web/index.html`, `web/app.js`, `web/styles.css`
-- **Email registration and login:** Supabase Auth client integration in `web/app.js`
-- **Account data, draws, match settlement and rankings:** `supabase/schema.sql`
-- **101 original fictional characters, 12 original worlds:** `supabase/seed.sql`
-- **00:00 Istanbul settlement:** `supabase/schedule.sql` (optional pg_cron)
-- **Publishing automation:** `.github/workflows/pages.yml`
-- **Static checks:** `.github/workflows/check-web.yml`
+## Activate the public site
 
-The frontend is not dependent on Higgsfield. A GitHub Pages URL will become available after Pages is enabled in repository settings.
+1. In [GitHub → Settings → Pages](https://github.com/Einsche/Daily-Stat-Clash/settings/pages) select **GitHub Actions** as the publishing source. The existing [Pages workflow](https://github.com/Einsche/Daily-Stat-Clash/actions/workflows/pages.yml) builds the public site and copies all 101 portraits. GitHub denied automatic enablement via its Actions installation, so an account owner must make this setting.
+2. Create/connect a Supabase project. No Supabase Auth email configuration is required. Execute `supabase/schema.sql`, then `supabase/seed.sql`, and optionally `supabase/schedule.sql` in the SQL editor.
+3. Populate `web/config.js` with that project's URL and *publishable/anon* key (public client credentials). NEVER publish a database password, service_role key, JWT signing secret or GitHub PAT.
+4. Open `https://einsche.github.io/Daily-Stat-Clash/` once GitHub Pages is deployed, and test username-only signup and login, picks, submit and settlements using two accounts.
 
-### Complete production setup
+See [web/README.md](web/README.md) for the deployment checklist.
 
-1. Under [Settings → Pages](https://github.com/Einsche/Daily-Stat-Clash/settings/pages), select **GitHub Actions** as the publishing source.
-2. [Run or rerun the Pages deployment](https://github.com/Einsche/Daily-Stat-Clash/actions/workflows/pages.yml).
-3. Create/connect a Supabase project, then execute `supabase/schema.sql`, `supabase/seed.sql`, and (for automatic midnight settlement) `supabase/schedule.sql` in that order.
-4. Under Supabase Authentication → URL Configuration, set the Site URL / redirect URL to `https://einsche.github.io/Daily-Stat-Clash/`.
-5. Set the project URL and **public publishable (anon) key** in `web/config.js`; do not place service-role or secret credentials in this client file.
-6. Test signup, email confirmation if required, sign-in, six unique daily assignments, submission, next-day settlement, history, and leaderboard.
+### Account behavior
 
-More setup guidance: [web/README.md](web/README.md).
+Registration requires a unique username (3–22 ASCII letters, numbers, underscore or hyphen) and a password (10–72 UTF-8 bytes). Passwords use bcrypt cost 12 in PostgreSQL. The browser stores only a random 256-bit session token; the database stores its hash. Sessions expire after 30 days and are revoked at sign-out. Repeated failed password attempts trigger a temporary lockout. **No email means there is no self-service password recovery.**
 
-**Current delivery status:** frontend and SQL integration are committed; automated frontend/asset checks passed. GitHub Pages configuration and Supabase project provisioning are external account actions that have not been completed. This repository is not yet a verified live multiplayer service.
+### Deployment status
 
-**Fairness:** The character values remain exposed in the public repository history and seed files. They should be replaced with a private-only scoring seed before conducting a competitive public release.
+The username-only UI and backend SQL have been committed, and the independent frontend's automated syntax and content checks pass. **The service is not live until GitHub Pages is enabled and a Supabase project is connected and seeded.**
 
-## Previous source tree
+### Pre-launch security
 
-`app/` preserves the earlier React/TanStack Start and Cloudflare D1 implementation. It is not the production backend for the new GitHub Pages frontend.
+PostgreSQL table access is not public; the browser receives only allowed results from restricted RPC functions. However, the current character ratings are in this public repository's seed and Git history, so players can discover them. Replace with a PRIVATE seed before any competitive public launch. Add request/IP rate limiting, abuse monitoring and bot protection for a larger audience.
