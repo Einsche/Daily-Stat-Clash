@@ -199,3 +199,35 @@ test('pressing Play while character roster is loading draws as soon as data arri
   assert.equal(page.ids.get('current-name').textContent,card.name);
   assert.equal(page.document.getElementById('draw-character').hidden,true);
 });
+
+
+test('old original-universe guest lineups are reset on crossover migration',async()=>{
+  const cache=storage();
+  const day='2026-11-22';
+  cache.setItem('daily-stat-clash.guest.player.v1',JSON.stringify({
+    handle:'IronFalcon_4827',createdAt:1
+  }));
+  cache.setItem('daily-stat-clash.guest.round.v1',JSON.stringify({
+    day,submitted:true,
+    picks:Array.from({length:6},(_,i)=>({
+      stat:['strength','dexterity','battle_iq','endurance','hacks','iq'][i],
+      character_id:'bren-pell-'+i,name:'Old Fighter',universe:'Ember Dominion'
+    })),
+    current:null
+  }));
+  cache.setItem('daily-stat-clash.guest.history.v1',JSON.stringify([
+    {day:'2026-11-21',handle:'IronFalcon_4827',picks:[]}
+  ]));
+  const clock={now:Date.parse('2026-11-22T13:00:00Z')};
+  const page=mount(cache,clock);
+  await flush();
+  const migrated=saved('round',cache);
+  assert.equal(migrated.day,day);
+  assert.equal(migrated.picks.length,0,'Stale selections must be deleted');
+  assert.equal(migrated.submitted,false);
+  assert.ok(migrated.current,'The new franchise fighter should draw automatically');
+  assert.match(migrated.current.id,/^(hxh|naruto|dc|marvel|witcher|jjk|aot|bleach)-/);
+  assert.equal(saved('history',cache),null,'Old result history must be cleared');
+  assert.equal(saved('player',cache).handle,'IronFalcon_4827','Guest name is preserved');
+  assert.equal(page.ids.get('current-name').textContent,migrated.current.name);
+});
