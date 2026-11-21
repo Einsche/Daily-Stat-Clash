@@ -4,6 +4,7 @@
   const config = window.DAILY_CLASH_CONFIG || {};
   const ready = Boolean(config.apiBase) || !window.location.hostname.endsWith('github.io');
   const apiBase = String(config.apiBase || new URL('.', document.baseURI).href).replace(/\/+$/, '');
+  document.getElementById('server-notice').hidden=ready;
   const sessionKey = 'daily-stat-clash.username-session.v2';
   const stats = [
     ['strength','STR','Strength','Raw physical power'],['dexterity','DEX','Dexterity','Speed & precision'],
