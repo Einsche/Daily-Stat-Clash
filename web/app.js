@@ -1,10 +1,10 @@
-/* Daily Stat Clash — independent GitHub Pages client, Supabase GoTrue + RPC */
+/* Daily Stat Clash — public GitHub Pages client, server-side username/password RPC */
 (() => {
   'use strict';
   const config = window.DAILY_CLASH_CONFIG || {};
   const ready = Boolean(config.supabaseUrl && config.supabaseAnonKey);
   const apiBase = String(config.supabaseUrl || '').replace(/\/+$/, '');
-  const sessionKey = 'daily-stat-clash.supabase-session.v1';
+  const sessionKey = 'daily-stat-clash.username-session.v2';
   const stats = [
     ['strength','STR','Strength','Raw physical power'],['dexterity','DEX','Dexterity','Speed & precision'],
     ['battle_iq','BIQ','Battle IQ','Tactical intelligence'],['endurance','END','Endurance','Durability & stamina'],
@@ -25,13 +25,14 @@
   document.querySelector('.draw-panel .character-details').append(pending);
 
   const getSession = () => {
-    try { const x = JSON.parse(localStorage.getItem(sessionKey) || 'null');
-      return x && typeof x.access_token==='string' && typeof x.refresh_token==='string' ? x : null; }
-    catch { return null; }
+    try {
+      const value = JSON.parse(localStorage.getItem(sessionKey) || 'null');
+      return value && /^[0-9a-f]{64}$/.test(value.token || '') ? value : null;
+    } catch { return null; }
   };
-  const setSession = x => {
-    session = x;
-    if (x) localStorage.setItem(sessionKey, JSON.stringify(x));
+  const setSession = value => {
+    session = value && value.token ? {token: value.token, user: value.user || null} : null;
+    if (session) localStorage.setItem(sessionKey, JSON.stringify(session));
     else localStorage.removeItem(sessionKey);
   };
   session = getSession();
@@ -52,32 +53,28 @@
     if (!path || !/^\/Daily-Stat-Clash\/app\/public\/assets\/portraits\/[a-z0-9-]+\.svg$/.test(path)) return '';
     return path;
   }
-  async function authFetch(path,payload) {
-    const res=await fetch(apiBase+'/auth/v1/'+path,{method:'POST',headers:{
-      'Content-Type':'application/json','apikey':config.supabaseAnonKey,
-      ...(session?.access_token?{'Authorization':'Bearer '+session.access_token}:{})
-    },body:JSON.stringify(payload)});
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok) throw Error(data.msg||data.error_description||data.message||data.error||'Authentication failed');
-    return data;
-  }
-  async function refresh() {
-    if(!session?.refresh_token)return false;
-    try{
-      const data=await authFetch('token?grant_type=refresh_token',{refresh_token:session.refresh_token});
-      setSession(data); return true;
-    } catch {setSession(null);return false;}
-  }
-  async function rpc(name,body={},retry=true) {
-    if(!ready) throw Error('Backend not connected. Configure Supabase URL and publishable key in web/config.js.');
-    const request=()=>fetch(apiBase+'/rest/v1/rpc/'+name,{method:'POST',headers:{
-      'Content-Type':'application/json','apikey':config.supabaseAnonKey,
-      'Authorization':'Bearer '+(session?.access_token||config.supabaseAnonKey)
-    },body:JSON.stringify(body)});
-    let res=await request();
-    if(res.status===401 && retry && await refresh()) res=await request();
+  // The publishable/anon key only identifies the Supabase project.
+  // All game authorization happens inside PostgreSQL RPCs using a server-hashed session token.
+  // Never expose a service_role key or a password hash in the browser.
+  async function rpc(name,body={}) {
+    if(!ready) throw Error('Account server not connected yet. Configure the Supabase project in web/config.js.');
+    const payload = {...body};
+    if (['game_state','game_draw','game_assign','game_submit','game_logout'].includes(name)) {
+      payload.p_token = session?.token || null;
+    }
+    const res=await fetch(apiBase+'/rest/v1/rpc/'+name,{
+      method:'POST',
+      cache:'no-store',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':config.supabaseAnonKey,
+        'Authorization':'Bearer '+config.supabaseAnonKey
+      },
+      body:JSON.stringify(payload)
+    });
     const data=await res.json().catch(()=>null);
     if(!res.ok) throw Error(data?.message||data?.error||'Server request failed ('+res.status+')');
+    if(data && typeof data==='object' && data.error) throw Error(data.error);
     return data;
   }
   function el(tag,cls,txt) {
@@ -184,18 +181,20 @@
     }catch(e){holder.replaceChildren(el('div','empty-state',e.message||'Leaderboard unavailable.'));}
   }
   async function loadState() {
-    if(!ready){redraw();drawBoard();notify('Supabase backend must be connected before accounts can be created.',true);return;}
-    try{
+    if(!ready){redraw();drawBoard();notify('Account server must be connected before sign-up and login can work.',true);return;}
+    try {
       state=await rpc('game_state');
+      if(session && !state?.user) {
+        setSession(null);
+        notify('Session expired. Please sign in again.',true);
+      }
       redraw();await drawBoard();
-    }catch(e){showError(e);redraw();}
+    } catch(e) {showError(e);redraw();}
   }
   async function action(name,args={}) {
     if(busy)return;
     busy=true;redraw();
-    try{state=await rpc(name,args);if(name==='game_draw') {
-      state=await rpc('game_state');
-    }notify(name==='game_submit'?'Lineup submitted successfully.':'Choice saved.');}
+    try{state=await rpc(name,args);notify(name==='game_submit'?'Lineup submitted successfully.':'Choice saved.');}
     catch(e){showError(e);}
     finally{busy=false;redraw();}
   }
@@ -212,9 +211,9 @@
   function authMode() {
     const signup=mode==='register';
     $('auth-title').textContent=signup?'Join the arena.':'Welcome back.';
-    $('auth-hint').textContent=signup?'Create an account to compete every day.':'Sign in to save picks and face other challengers.';
-    $('signup-handle-wrap').hidden=!signup;
-    $('signup-handle').required=signup;
+    $('auth-hint').textContent=signup?'Choose a unique username and password. No email required.':'Enter your username and password to continue.';
+    $('signup-handle-wrap').hidden=false;
+    $('signup-handle').required=true;
     $('auth-password').autocomplete=signup?'new-password':'current-password';
     $('auth-submit').textContent=signup?'CREATE ACCOUNT ↗':'SIGN IN ↗';
     $('auth-switch-prefix').textContent=signup?'Already have an account?':'New to the arena?';
@@ -223,27 +222,40 @@
   }
   async function submitAuth(event) {
     event.preventDefault();
-    if(!ready){$('auth-error').textContent='Connect a Supabase project in web/config.js to activate registration and login.';$('auth-error').hidden=false;return;}
-    const email=$('auth-email').value.trim();
+    if(!ready){
+      $('auth-error').textContent='Account server not configured. Connect Supabase to activate sign-up and login.';
+      $('auth-error').hidden=false;return;
+    }
+    const username=$('signup-handle').value.trim();
     const password=$('auth-password').value;
-    const handle=$('signup-handle').value.trim();
-    if(password.length<8){$('auth-error').textContent='Password must have at least eight characters.';$('auth-error').hidden=false;return;}
-    if(mode==='register'&&!/^[a-zA-Z0-9_-]{3,22}$/.test(handle)){$('auth-error').textContent='Player name must be 3–22 letters, numbers, _ or -.';$('auth-error').hidden=false;return;}
+    const error=$('auth-error');
+    error.hidden=true;
+    if(!/^[A-Za-z0-9_-]{3,22}$/.test(username)){
+      error.textContent='Username must be 3–22 letters, numbers, _ or -.';
+      error.hidden=false;return;
+    }
+    if(new TextEncoder().encode(password).length<10 || new TextEncoder().encode(password).length>72){
+      error.textContent='Password must be 10–72 bytes.';
+      error.hidden=false;return;
+    }
     $('auth-submit').disabled=true;
-    try{
-      const payload=mode==='register'?{email,password,data:{handle}}:{email,password};
-      const data=await authFetch(mode==='register'?'signup':'token?grant_type=password',payload);
-      if(data.access_token){
-        setSession(data);
-        $('auth-dialog').close();notify('Signed in successfully.');await loadState();
-      }else {
-        $('auth-dialog').close();notify('Account created. Check your email for a confirmation link before signing in.');
-      }
-    }catch(e){$('auth-error').textContent=e.message;$('auth-error').hidden=false;}
-    finally{$('auth-submit').disabled=false;}
+    try {
+      const isNew=mode==='register';
+      const data=await rpc(isNew?'game_register':'game_login',{
+        p_handle:username,p_password:password
+      });
+      if(!data?.token)throw Error('The account server did not return a session.');
+      setSession(data);
+      $('auth-password').value='';
+      $('auth-dialog').close();
+      notify(isNew?'Your account has been created. Welcome!':'Signed in successfully.');
+      await loadState();
+    } catch(e) {
+      error.textContent=e.message||String(e);error.hidden=false;
+    } finally {$('auth-submit').disabled=false;}
   }
   async function signOut() {
-    if(session&&ready){try{await authFetch('logout',{});}catch{/* Local sign-out still completes */}}
+    if(session&&ready){try{await rpc('game_logout');}catch{/* Local sign-out still completes */}}
     setSession(null);state=null;redraw();await loadState();notify('Signed out.');
   }
   function tickCountdown(){
@@ -272,8 +284,5 @@
   const localDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   let trackedDay=localDay();
   setInterval(()=>{const next=localDay();if(next!==trackedDay){trackedDay=next;loadState();}},15000);
-  (async()=>{
-    if(session)await refresh();
-    await loadState();
-  })();
+  (async()=>{await loadState();})();
 })();
