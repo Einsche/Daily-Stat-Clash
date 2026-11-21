@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#100d1a">
+  <meta name="description" content="Daily Stat Clash — choose six characters, trust your instincts, and battle for the leaderboard.">
+  <base href="/Daily-Stat-Clash/">
+  <title>Daily Stat Clash — Choose wisely. Win daily.</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="ambient ambient-1"></div><div class="ambient ambient-2"></div>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Daily Stat Clash home">
+        <span class="brand-mark">✦</span>
+        <span class="brand-name">DAILY <em>STAT</em> CLASH</span>
+      </a>
+      <nav class="desktop-nav" aria-label="Main navigation">
+        <a href="#arena">THE ARENA</a><a href="#leaderboard">LEADERBOARD</a><a href="#history">HISTORY</a>
+      </nav>
+      <div class="top-actions"><span id="user-handle" class="user-handle" hidden></span><button id="auth-toggle" class="btn btn-outline" type="button">SIGN IN <span>↗</span></button></div>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="hero-kicker"><span class="pulse-dot"></span> A NEW CHALLENGE, EVERY DAY <span class="hairline"></span> <span id="today-label">ISTANBUL TIME</span></div>
+        <h1>MAKE YOUR <span>CHOICES.</span><br>OWN THE <i>OUTCOME.</i></h1>
+        <p class="hero-copy">Six characters. Six hidden stats. One shot every day. Assign each fighter to the category where you think they dominate — and face another player at midnight.</p>
+        <div class="hero-stats">
+          <div><b id="count-characters">101</b><span>CHARACTERS</span></div>
+          <div class="stat-divider"></div><div><b>06</b><span>DAILY PICKS</span></div>
+          <div class="stat-divider"></div><div><b id="count-players">—</b><span>CHALLENGERS</span></div>
+        </div>
+      </section>
+      <section id="arena" class="arena-grid">
+        <article class="play-panel">
+          <div class="panel-heading"><div><span class="eyebrow">01 / TODAY'S ARENA</span><h2>Your daily lineup</h2></div><div id="progress-count" class="progress-count">0 <span>/ 6</span></div></div>
+          <div class="progress-track"><div id="progress-fill" class="progress-fill" style="width:0%"></div></div>
+          <p class="panel-subtitle">Every character can be assigned only once. Their stat values stay secret until the daily matchup is settled.</p>
+          <div id="stat-grid" class="stat-grid" aria-live="polite"></div>
+          <div class="lineup-footer"><p id="lineup-status">Sign in to begin today's challenge.</p><button id="submit-lineup" type="button" class="btn btn-primary" disabled>SUBMIT LINEUP <span>↗</span></button></div>
+        </article>
+        <aside class="draw-side">
+          <article class="draw-panel">
+            <div class="draw-topline"><span class="eyebrow">02 / YOUR NEXT CHARACTER</span><span id="draw-number" class="draw-index">DRAW 01 / 06</span></div>
+            <div class="character-display"><div class="character-halo"></div><div id="portrait-fallback" class="portrait-fallback">✦</div><img id="current-portrait" src="" alt="" hidden><div class="portrait-shadow"></div></div>
+            <div class="character-details"><span id="current-world" class="character-world">THE ARENA AWAITS</span><h3 id="current-name">A fighter is waiting.</h3><p id="draw-description">Sign in and reveal your next character. Then choose which stat best represents them.</p></div>
+            <div class="draw-bottom"><span class="lock-icon">◇</span><span id="draw-note">STATS HIDDEN UNTIL REVEAL</span></div>
+          </article>
+          <article class="timer-panel"><span class="eyebrow">NEXT MATCHUP</span><div id="countdown" class="countdown">-- : -- : --</div><span>MIDNIGHT · EUROPE / ISTANBUL</span></article>
+        </aside>
+      </section>
+      <section id="leaderboard" class="section-panel leaderboard-section">
+        <div class="section-header"><div><span class="eyebrow">03 / THE RANKINGS</span><h2>Hall of contenders</h2></div><div class="tab-switch" role="group" aria-label="Leaderboard period"><button class="board-tab active" data-period="weekly">WEEKLY</button><button class="board-tab" data-period="monthly">MONTHLY</button><button class="board-tab" data-period="alltime">ALL TIME</button></div></div>
+        <div class="board-head"><span>RANK / PLAYER</span><span>MATCHES</span><span>POINTS</span></div>
+        <div id="leaderboard-rows" class="board-rows"><div class="empty-state">Connecting to the leaderboard…</div></div>
+      </section>
+      <section id="history" class="section-panel history-section"><div class="section-header"><div><span class="eyebrow">04 / YOUR PAST CLASHES</span><h2>Match history</h2></div><span class="history-tag">PERMANENT RECORD</span></div><div id="history-list" class="history-list"><div class="empty-state">Sign in to view your results and past opponents.</div></div></section>
+      <section class="how-section"><span class="eyebrow">THE RULES OF ENGAGEMENT</span><h2>A game of intuition.</h2><div class="rule-grid"><div><span>01</span><h3>Draw a character</h3><p>Meet one randomly selected fighter at a time. Their stats are hidden.</p></div><div><span>02</span><h3>Assign a category</h3><p>Lock them into Strength, Dexterity, Battle IQ, Endurance, Hacks, or IQ.</p></div><div><span>03</span><h3>Face the matchup</h3><p>Submit all six picks. At midnight, each category beats your opponent's if its value is higher. Each winning stat earns one point.</p></div></div></section>
+    </main>
+    <footer><div class="brand brand-footer"><span class="brand-mark">✦</span><span class="brand-name">DAILY <em>STAT</em> CLASH</span></div><span>BUILT FOR THE BOLD. RESETS DAILY AT 00:00 IST.</span><a href="https://github.com/Einsche/Daily-Stat-Clash" target="_blank" rel="noopener noreferrer">SOURCE ON GITHUB ↗</a></footer>
+  </div>
+  <div id="notification" class="notification" role="status" aria-live="polite" hidden></div>
+  <dialog id="auth-dialog" class="auth-dialog"><form id="auth-form" novalidate><button type="button" class="dialog-close" id="close-auth" aria-label="Close">×</button><span class="eyebrow">JOIN THE ARENA</span><h2 id="auth-title">Welcome back.</h2><p id="auth-hint">Sign in to save your picks and challenge other players.</p><div id="signup-handle-wrap" class="field" hidden><label for="signup-handle">PLAYER NAME</label><input id="signup-handle" type="text" minlength="3" maxlength="22" autocomplete="nickname" placeholder="Your display name"></div><div class="field"><label for="auth-email">EMAIL ADDRESS</label><input id="auth-email" type="email" autocomplete="email" required placeholder="you@example.com"></div><div class="field"><label for="auth-password">PASSWORD</label><input id="auth-password" type="password" autocomplete="current-password" minlength="8" required placeholder="At least 8 characters"></div><div id="auth-error" class="auth-error" role="alert" hidden></div><button type="submit" id="auth-submit" class="btn btn-primary btn-wide">SIGN IN ↗</button><div class="switch-auth"><span id="auth-switch-prefix">New to the arena?</span> <button id="auth-switch" type="button">Create an account</button></div></form></dialog>
+  <div id="confirm-backdrop" class="confirm-backdrop" hidden><div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><span class="eyebrow">FINAL CHECK</span><h2 id="confirm-title">Lock in your lineup?</h2><p>Once submitted, your six choices cannot be changed today. Results arrive after midnight in Istanbul.</p><div class="confirm-actions"><button class="btn btn-outline" id="confirm-cancel">GO BACK</button><button class="btn btn-primary" id="confirm-submit">CONFIRM LINEUP ↗</button></div></div></div>
+</body>
+</html>
