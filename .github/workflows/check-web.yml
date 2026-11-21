@@ -1,10 +1,9 @@
-name: Validate independent game interface
+name: Validate public guest-mode interface
 on:
   push:
     branches: [main]
     paths:
       - 'web/**'
-      - 'server/**'
       - 'app/public/assets/portraits/**'
       - '.github/workflows/check-web.yml'
   pull_request:
@@ -19,36 +18,33 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Validate client code and backend contract
+      - name: Check JavaScript and guest interface
         shell: bash
         run: |
           node --check web/app.js
-          node --check web/config.js
-          node --check server/game.js
-          node --check server/index.js
           node <<'NODE'
           const fs=require('node:fs');
           const assert=require('node:assert/strict');
           const html=fs.readFileSync('web/index.html','utf8');
           const js=fs.readFileSync('web/app.js','utf8');
-          const config=fs.readFileSync('web/config.js','utf8');
-          const source=fs.readFileSync('server/index.js','utf8');
-          const chars=JSON.parse(fs.readFileSync('app/src/data/characters.json','utf8'));
+          const roster=JSON.parse(fs.readFileSync('web/guest-roster.json','utf8'));
           const ids=new Set([...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
           const references=[...js.matchAll(/\$\('([^']+)'\)/g)].map(m=>m[1]);
           const created=new Set([...js.matchAll(/\.id\s*=\s*'([^']+)'/g)].map(m=>m[1]));
           const missing=[...new Set(references)].filter(id=>!ids.has(id)&&!created.has(id));
-          assert.deepEqual(missing,[],'Missing frontend DOM elements');
-          assert.equal(chars.length,101);
-          for(const c of chars){
-            assert.ok(fs.existsSync('app/public/assets/portraits/'+c.id+'.svg'),'Missing portrait '+c.id);
+          assert.deepEqual(missing,[],'Missing DOM elements');
+          assert.ok(ids.has('guest-start'),'Missing guest button');
+          assert.ok(!html.includes('auth-dialog'),'Login form must be removed');
+          assert.ok(!html.includes('SIGN IN') && !html.includes('CREATE ACCOUNT'));
+          assert.equal(roster.length,101,'Guest roster must contain 101 characters');
+          assert.equal(new Set(roster.map(x=>x.id)).size,101);
+          const full=JSON.parse(fs.readFileSync('app/src/data/characters.json','utf8'));
+          assert.deepEqual(roster.map(x=>x.id),full.map(x=>x.id));
+          for(const c of roster){
+            assert.deepEqual(Object.keys(c).sort(),['id','name','universe']);
+            assert.ok(fs.existsSync('app/public/assets/portraits/'+c.id+'.svg'),'Missing '+c.id);
           }
-          assert.ok(html.includes('USERNAME') && !html.includes('EMAIL ADDRESS'));
-          assert.ok(config.includes('apiBase') && !config.includes('supabaseUrl'));
-          assert.ok(!js.includes('supabaseUrl') && !js.includes('supabaseAnonKey'));
-          for(const route of ['/api/auth/register','/api/auth/login','/api/state','/api/draw','/api/submit']){
-            assert.ok(source.includes("API+'"+route.slice(4)+"'"),'Backend route missing '+route);
-            assert.ok(js.includes(route),'Frontend route missing '+route);
-          }
-          console.log('PASS: public username/password UI, 101 portraits and Node API contract');
+          assert.ok(js.includes('PLAY AS GUEST'));
+          assert.ok(js.includes('localStorage') && js.includes('dayIstanbul'));
+          console.log('PASS: guest-only interface, local daily state, 101 portraits and hidden scores');
           NODE
