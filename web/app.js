@@ -7,7 +7,9 @@
   const ROUND_KEY = 'daily-stat-clash.guest.round.v1';
   const HISTORY_KEY = 'daily-stat-clash.guest.history.v1';
   const ROSTER_VERSION_KEY = 'daily-stat-clash.guest.roster-version';
-  const ROSTER_VERSION = 'hxh-naruto-dc-marvel-witcher-jjk-aot-bleach-v1';
+  const ROSTER_VERSION = 'hxh-naruto-dc-marvel-witcher-jjk-aot-bleach-v2';
+  const PUBLIC_ASSET_BUILD = 'crossover-160-20261122-r2';
+  const ACTIVE_CHARACTER_ID = /^(?:hxh|naruto|dc|marvel|witcher|jjk|aot|bleach)-[a-z0-9-]+$/;
   const UNIVERSES = [
     'Hunter x Hunter','Naruto','DC','Marvel','The Witcher',
     'Jujutsu Kaisen','Attack on Titan','Bleach'
@@ -97,13 +99,13 @@
     if(!value || value.day!==day || !Array.isArray(value.picks))return newRound(day);
     const picks=value.picks.filter(p =>
       p && stats.some(s=>s[0]===p.stat) &&
-      typeof p.character_id==='string' && /^[a-z0-9-]+$/.test(p.character_id)
+      typeof p.character_id==='string' && ACTIVE_CHARACTER_ID.test(p.character_id)
     ).slice(0,6);
     if(new Set(picks.map(x=>x.stat)).size!==picks.length ||
        new Set(picks.map(x=>x.character_id)).size!==picks.length) return newRound(day);
     return {
       day,picks,
-      current:value.current && /^[a-z0-9-]+$/.test(value.current.id||'') ? value.current:null,
+      current:value.current && ACTIVE_CHARACTER_ID.test(value.current.id||'') ? value.current:null,
       submitted:value.submitted===true && picks.length===6
     };
   }
@@ -379,14 +381,14 @@
   tick();
   setInterval(tick,1000);
 
-  fetch(new URL('guest-roster.json',document.baseURI),{cache:'no-cache'})
+  fetch(new URL('guest-roster.json?build='+encodeURIComponent(PUBLIC_ASSET_BUILD),document.baseURI),{cache:'reload'})
     .then(response=>{
       if(!response.ok)throw Error('Character roster request failed ('+response.status+').');
       return response.json();
     })
     .then(data=>{
       if(!Array.isArray(data)||data.length<6)throw Error('The roster is incomplete.');
-      roster=data.filter(c=>c&&/^[a-z0-9-]+$/.test(c.id||'') &&
+      roster=data.filter(c=>c&&ACTIVE_CHARACTER_ID.test(c.id||'') &&
         typeof c.name==='string' && typeof c.universe==='string');
       const totals=UNIVERSES.map(u=>roster.filter(c=>c.universe===u).length);
       if(roster.length!==160 || new Set(roster.map(c=>c.id)).size!==160 ||
