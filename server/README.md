@@ -1,8 +1,18 @@
-# Daily Stat Clash: Node.js / SQLite API
+# Daily Stat Clash — standalone Node.js / SQLite backend
 
-No Supabase and no third-party authentication. Everything runs in one Node.js 24 service with persistent SQLite. The app uses built-in Node modules only, so `npm install` is unnecessary.
+This optional backend is not deployed with GitHub Pages. The public site currently uses local guest mode only.
 
-## Start locally
+## Crossover roster
+
+The full seed file is `app/src/data/characters.json`, with **160 characters** (20 from each of Hunter x Hunter, Naruto, DC, Marvel, The Witcher, Jujutsu Kaisen, Attack on Titan and Bleach). Every character has six subjective 0–100 game stats.
+
+On startup, `server/game.js` computes a SHA-256 roster revision. If the database's revision differs, it resets the obsolete SQLite characters, pending selections, matchup results and settlement records in a single transaction, then seeds the new roster. User accounts and sessions remain intact. Unchanged revisions do not erase game records.
+
+Franchise artwork is not included; the backend uses the game icon as a neutral portrait placeholder.
+
+## Local development
+
+Requires Node.js 24 or later. There are no third-party npm runtime dependencies.
 
 ```sh
 npm test
@@ -11,40 +21,10 @@ DB_PATH=./data/daily-stat-clash.sqlite npm start
 
 Open http://localhost:3000/Daily-Stat-Clash/. Health: http://localhost:3000/Daily-Stat-Clash/api/health.
 
-## Railway production deployment
+## Future multiplayer deployment
 
-- Connect GitHub repository `Einsche/Daily-Stat-Clash` to a Railway service.
-- Build using the root `Dockerfile` (configured in `railway.json`).
-- Mount a persistent Railway **volume at `/data`**.
-- Set `DB_PATH=/data/daily-stat-clash.sqlite` and `NODE_ENV=production`.
-- Keep the service at **one replica** for local SQLite.
-- Generate a public service domain (HTTPS) using Railway's network settings. The app will be at `https://<YOUR-DOMAIN>/Daily-Stat-Clash/`.
-- For the separate GitHub Pages frontend set `PUBLIC_WEB_ORIGIN=https://einsche.github.io`, then set `web/config.js` `apiBase` to `https://<YOUR-DOMAIN>/Daily-Stat-Clash`.
+Deploy the repository via `Dockerfile` to a Node.js host such as Railway. Mount a writable persistent volume at `/data`, set `DB_PATH=/data/daily-stat-clash.sqlite`, run a single SQLite replica and expose the app over HTTPS. Back up the persistent volume. The browser-based guest site does not currently communicate with this server.
 
-The mounted volume must persist across releases. The Docker image itself is stateless; do not store production account data on its ephemeral filesystem. Back up the volume regularly. Avoid committing live SQLite database files to Git.
+## Security and licensing
 
-## API (JSON)
-
-All routes begin with `/Daily-Stat-Clash/api`.
-
-| Method | Path | Authentication |
-| --- | --- | --- |
-| POST | /auth/register | username and password in JSON |
-| POST | /auth/login | username and password in JSON |
-| POST | /auth/logout | Bearer session token |
-| GET | /state | Optional Bearer session token |
-| GET | /leaderboard?period=weekly | Public |
-| POST | /draw | Bearer token |
-| POST | /assign | Bearer token and JSON stat |
-| POST | /submit | Bearer token |
-| GET | /health | Public |
-
-Username uniqueness is case-insensitive. Passwords are scrypt-hashed with random salts and are never returned or saved in the browser. Tokens are 256-bit random strings with SHA-256 digests stored in SQLite, expiring after 30 days. Login throttle: eight wrong passwords per username temporarily lock login; HTTP requests also have basic per-IP rate limiting.
-
-Daily settlement runs every 15 seconds as a catch-up check and on game requests; it handles 00:00 Europe/Istanbul, process restarts and downtime. Submitted lineups are immutable. Completed match results and rankings persist.
-
-### Important
-
-- The original character stat values are publicly committed in the source roster, so competitors can inspect them. Move scores to a genuinely private seed before competitive launch.
-- Without email, users cannot self-reset forgotten passwords. Admin recovery or recovery codes would be needed.
-- Consider edge firewall, bot protection, distributed/IP rate limiting, observability, backups, and identity abuse safeguards for large-scale traffic.
+The optional backend implements scrypt-hashed usernames/passwords, hashed 30-day bearer sessions, API rate limiting, and server-side scoring. Third-party character identities are used for illustrative crossover game data; actual commercial release may need licenses. The current score dataset is visible in the public Git repository and must be made confidential for fair real-money/competitive play.
