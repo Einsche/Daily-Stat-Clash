@@ -27,3 +27,17 @@ jobs:
           node --check web/config.js
       - name: Test server with real SQLite and live HTTP requests
         run: npm test
+      - name: Build production container and verify HTTP health
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build -t daily-stat-clash:ci .
+          docker run -d --name daily-stat-clash-ci -p 127.0.0.1:35123:3000 daily-stat-clash:ci
+          trap 'docker logs daily-stat-clash-ci || true; docker rm -f daily-stat-clash-ci || true' EXIT
+          curl --fail --silent --show-error --retry 12 --retry-delay 1 \
+            --retry-connrefused http://127.0.0.1:35123/Daily-Stat-Clash/api/health
+          echo
+          curl --fail --silent --show-error --output /dev/null \
+            http://127.0.0.1:35123/Daily-Stat-Clash/
+          curl --fail --silent --show-error --output /dev/null \
+            http://127.0.0.1:35123/Daily-Stat-Clash/app/public/assets/portraits/bren-pell.svg
