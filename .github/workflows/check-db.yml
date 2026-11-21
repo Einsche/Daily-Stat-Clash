@@ -29,6 +29,12 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+      - name: Provision Supabase-style API roles in vanilla PostgreSQL
+        shell: bash
+        run: |
+          docker run --rm --network host -e PGPASSWORD=testpassword postgres:17 \
+            psql -h 127.0.0.1 -U postgres -d stat_clash -v ON_ERROR_STOP=1 \
+            -c "create role anon; create role authenticated;"
       - name: Load schema and seed (real PostgreSQL 17)
         shell: bash
         run: |
