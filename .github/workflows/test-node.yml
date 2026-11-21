@@ -48,4 +48,4 @@ jobs:
           curl --fail --silent --show-error --output /dev/null \
             http://127.0.0.1:35123/Daily-Stat-Clash/
           curl --fail --silent --show-error --output /dev/null \
-            http://127.0.0.1:35123/Daily-Stat-Clash/app/public/assets/portraits/bren-pell.svg
+            http://127.0.0.1:35123/Daily-Stat-Clash/guest-roster.json
