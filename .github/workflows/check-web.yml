@@ -47,7 +47,7 @@ jobs:
           assert.ok(config.includes('apiBase') && !config.includes('supabaseUrl'));
           assert.ok(!js.includes('supabaseUrl') && !js.includes('supabaseAnonKey'));
           for(const route of ['/api/auth/register','/api/auth/login','/api/state','/api/draw','/api/submit']){
-            assert.ok(source.includes(route),'Backend route missing '+route);
+            assert.ok(source.includes("API+'"+route.slice(4)+"'"),'Backend route missing '+route);
             assert.ok(js.includes(route),'Frontend route missing '+route);
           }
           console.log('PASS: public username/password UI, 101 portraits and Node API contract');
