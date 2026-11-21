@@ -214,8 +214,11 @@
     player={handle:name,createdAt:Date.now()};
     store(PLAYER_KEY,player);
     render();
+    // Start the round immediately. If the roster is still loading, the load
+    // completion callback will draw the first card for this guest.
+    if(loaded && !round.current && !round.submitted && round.picks.length<6)draw();
     notify(old?'New guest name: '+name+' · Today’s picks are preserved.':
-      'You are now '+name+'! Draw your first fighter.');
+      'You are now '+name+'! Your character is ready.');
     if(!old)document.getElementById('arena').scrollIntoView({behavior:'smooth',block:'start'});
   }
 
@@ -246,7 +249,10 @@
     });
     round.current=null;
     store(ROUND_KEY,round);
-    render();
+    // A stat choice automatically reveals the next fighter.
+    // Six assigned fighters leave no next draw and enable Submit.
+    if(round.picks.length<6)draw();
+    else render();
   }
   function openConfirm() {
     ensureDay();
@@ -316,7 +322,8 @@
     const day=dayIstanbul();
     if(day!==observedDay){
       ensureDay();
-      render();
+      if(player && loaded && !round.current && !round.submitted && round.picks.length<6)draw();
+      else render();
     }
     const [year,month,date]=day.split('-').map(Number);
     const nextMidnightUtc=Date.UTC(year,month-1,date,21,0,0);
@@ -371,7 +378,10 @@
       if(round.submitted && round.picks.length!==6)round.submitted=false;
       store(ROUND_KEY,round);
       loaded=true;
-      render();
+      // When Play as Guest was pressed before the roster arrived, draw as soon
+      // as the roster is available. Also restore an active guest on reload.
+      if(player && !round.current && !round.submitted && round.picks.length<6)draw();
+      else render();
     })
     .catch(error=>{
       loaded=false;
