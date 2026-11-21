@@ -1,507 +1,802 @@
 [
   {
-    "id": "bren-pell",
-    "name": "Bren Pell",
-    "universe": "Ember Dominion"
+    "id": "hxh-gon-freecss",
+    "name": "Gon Freecss",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "zeran-valehart",
-    "name": "Zeran Valehart",
-    "universe": "Astral Covenant"
+    "id": "hxh-killua-zoldyck",
+    "name": "Killua Zoldyck",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "zeran-halcyon",
-    "name": "Zeran Halcyon",
-    "universe": "Iron Wastes"
+    "id": "hxh-kurapika",
+    "name": "Kurapika",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "ysra-aster",
-    "name": "Ysra Aster",
-    "universe": "Verdant Court"
+    "id": "hxh-leorio-paradinight",
+    "name": "Leorio Paradinight",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "liora-ardent",
-    "name": "Liora Ardent",
-    "universe": "Tidebound Republic"
+    "id": "hxh-hisoka-morow",
+    "name": "Hisoka Morow",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "aris-kane",
-    "name": "Aris Kane",
-    "universe": "Obsidian Order"
+    "id": "hxh-chrollo-lucilfer",
+    "name": "Chrollo Lucilfer",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "maera-rook",
-    "name": "Maera Rook",
-    "universe": "Skyward Nomads"
+    "id": "hxh-isaac-netero",
+    "name": "Isaac Netero",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "fenna-hearth",
-    "name": "Fenna Hearth",
-    "universe": "Hollow Realms"
+    "id": "hxh-meruem",
+    "name": "Meruem",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "rheia-ashcroft",
-    "name": "Rheia Ashcroft",
-    "universe": "Glass Citadel"
+    "id": "hxh-neferpitou",
+    "name": "Neferpitou",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "liora-auren",
-    "name": "Liora Auren",
-    "universe": "Thunder Pact"
+    "id": "hxh-shaiapouf",
+    "name": "Shaiapouf",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "lucen-kestrel",
-    "name": "Lucen Kestrel",
-    "universe": "Lunar Archive"
+    "id": "hxh-menthuthuyoupi",
+    "name": "Menthuthuyoupi",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "cassian-valehart",
-    "name": "Cassian Valehart",
-    "universe": "Crimson Frontier"
+    "id": "hxh-biscuit-krueger",
+    "name": "Biscuit Krueger",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "neris-raine",
-    "name": "Neris Raine",
-    "universe": "Ember Dominion"
+    "id": "hxh-ging-freecss",
+    "name": "Ging Freecss",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "thane-merrin",
-    "name": "Thane Merrin",
-    "universe": "Astral Covenant"
+    "id": "hxh-kite",
+    "name": "Kite",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "tarin-silvers",
-    "name": "Tarin Silvers",
-    "universe": "Iron Wastes"
+    "id": "hxh-illumi-zoldyck",
+    "name": "Illumi Zoldyck",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "evren-kestrel",
-    "name": "Evren Kestrel",
-    "universe": "Verdant Court"
+    "id": "hxh-silva-zoldyck",
+    "name": "Silva Zoldyck",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "avel-hollow",
-    "name": "Avel Hollow",
-    "universe": "Tidebound Republic"
+    "id": "hxh-zeno-zoldyck",
+    "name": "Zeno Zoldyck",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "seris-vire",
-    "name": "Seris Vire",
-    "universe": "Obsidian Order"
+    "id": "hxh-knuckle-bine",
+    "name": "Knuckle Bine",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "rowan-lorien",
-    "name": "Rowan Lorien",
-    "universe": "Skyward Nomads"
+    "id": "hxh-morel-mackernasey",
+    "name": "Morel Mackernasey",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "varya-valehart",
-    "name": "Varya Valehart",
-    "universe": "Hollow Realms"
+    "id": "hxh-feitan-portor",
+    "name": "Feitan Portor",
+    "universe": "Hunter x Hunter"
   },
   {
-    "id": "seris-seraph",
-    "name": "Seris Seraph",
-    "universe": "Glass Citadel"
+    "id": "naruto-naruto-uzumaki",
+    "name": "Naruto Uzumaki",
+    "universe": "Naruto"
   },
   {
-    "id": "ziven-korr",
-    "name": "Ziven Korr",
-    "universe": "Thunder Pact"
+    "id": "naruto-sasuke-uchiha",
+    "name": "Sasuke Uchiha",
+    "universe": "Naruto"
   },
   {
-    "id": "kael-mori",
-    "name": "Kael Mori",
-    "universe": "Lunar Archive"
+    "id": "naruto-sakura-haruno",
+    "name": "Sakura Haruno",
+    "universe": "Naruto"
   },
   {
-    "id": "maera-sund",
-    "name": "Maera Sund",
-    "universe": "Crimson Frontier"
+    "id": "naruto-kakashi-hatake",
+    "name": "Kakashi Hatake",
+    "universe": "Naruto"
   },
   {
-    "id": "ysra-vire",
-    "name": "Ysra Vire",
-    "universe": "Ember Dominion"
+    "id": "naruto-itachi-uchiha",
+    "name": "Itachi Uchiha",
+    "universe": "Naruto"
   },
   {
-    "id": "aeris-ardent",
-    "name": "Aeris Ardent",
-    "universe": "Astral Covenant"
+    "id": "naruto-madara-uchiha",
+    "name": "Madara Uchiha",
+    "universe": "Naruto"
   },
   {
-    "id": "lyra-solenne",
-    "name": "Lyra Solenne",
-    "universe": "Iron Wastes"
+    "id": "naruto-hashirama-senju",
+    "name": "Hashirama Senju",
+    "universe": "Naruto"
   },
   {
-    "id": "halen-sable",
-    "name": "Halen Sable",
-    "universe": "Verdant Court"
+    "id": "naruto-minato-namikaze",
+    "name": "Minato Namikaze",
+    "universe": "Naruto"
   },
   {
-    "id": "evren-pell",
-    "name": "Evren Pell",
-    "universe": "Tidebound Republic"
+    "id": "naruto-jiraiya",
+    "name": "Jiraiya",
+    "universe": "Naruto"
   },
   {
-    "id": "vale-orris",
-    "name": "Vale Orris",
-    "universe": "Obsidian Order"
+    "id": "naruto-tsunade",
+    "name": "Tsunade",
+    "universe": "Naruto"
   },
   {
-    "id": "thane-halden",
-    "name": "Thane Halden",
-    "universe": "Skyward Nomads"
+    "id": "naruto-orochimaru",
+    "name": "Orochimaru",
+    "universe": "Naruto"
   },
   {
-    "id": "rheia-pell",
-    "name": "Rheia Pell",
-    "universe": "Hollow Realms"
+    "id": "naruto-shikamaru-nara",
+    "name": "Shikamaru Nara",
+    "universe": "Naruto"
   },
   {
-    "id": "varya-thorn",
-    "name": "Varya Thorn",
-    "universe": "Glass Citadel"
+    "id": "naruto-gaara",
+    "name": "Gaara",
+    "universe": "Naruto"
   },
   {
-    "id": "eryn-kane",
-    "name": "Eryn Kane",
-    "universe": "Thunder Pact"
+    "id": "naruto-rock-lee",
+    "name": "Rock Lee",
+    "universe": "Naruto"
   },
   {
-    "id": "darian-korr",
-    "name": "Darian Korr",
-    "universe": "Lunar Archive"
+    "id": "naruto-might-guy",
+    "name": "Might Guy",
+    "universe": "Naruto"
   },
   {
-    "id": "ziven-rook",
-    "name": "Ziven Rook",
-    "universe": "Crimson Frontier"
+    "id": "naruto-pain-nagato",
+    "name": "Pain (Nagato)",
+    "universe": "Naruto"
   },
   {
-    "id": "aris-vael",
-    "name": "Aris Vael",
-    "universe": "Ember Dominion"
+    "id": "naruto-obito-uchiha",
+    "name": "Obito Uchiha",
+    "universe": "Naruto"
   },
   {
-    "id": "tarin-auren",
-    "name": "Tarin Auren",
-    "universe": "Astral Covenant"
+    "id": "naruto-hinata-hyuga",
+    "name": "Hinata Hyuga",
+    "universe": "Naruto"
   },
   {
-    "id": "varya-hearth",
-    "name": "Varya Hearth",
-    "universe": "Iron Wastes"
+    "id": "naruto-killer-bee",
+    "name": "Killer Bee",
+    "universe": "Naruto"
   },
   {
-    "id": "riven-morrow",
-    "name": "Riven Morrow",
-    "universe": "Verdant Court"
+    "id": "naruto-neji-hyuga",
+    "name": "Neji Hyuga",
+    "universe": "Naruto"
   },
   {
-    "id": "cyrin-dusk",
-    "name": "Cyrin Dusk",
-    "universe": "Tidebound Republic"
+    "id": "dc-superman",
+    "name": "Superman",
+    "universe": "DC"
   },
   {
-    "id": "dessa-korr",
-    "name": "Dessa Korr",
-    "universe": "Obsidian Order"
+    "id": "dc-batman",
+    "name": "Batman",
+    "universe": "DC"
   },
   {
-    "id": "lucen-sund",
-    "name": "Lucen Sund",
-    "universe": "Skyward Nomads"
+    "id": "dc-wonder-woman",
+    "name": "Wonder Woman",
+    "universe": "DC"
   },
   {
-    "id": "riven-veylan",
-    "name": "Riven Veylan",
-    "universe": "Hollow Realms"
+    "id": "dc-flash-barry-allen",
+    "name": "Flash (Barry Allen)",
+    "universe": "DC"
   },
   {
-    "id": "thane-draven",
-    "name": "Thane Draven",
-    "universe": "Glass Citadel"
+    "id": "dc-aquaman",
+    "name": "Aquaman",
+    "universe": "DC"
   },
   {
-    "id": "morrow-orris",
-    "name": "Morrow Orris",
-    "universe": "Thunder Pact"
+    "id": "dc-green-lantern-hal-jordan",
+    "name": "Green Lantern (Hal Jordan)",
+    "universe": "DC"
   },
   {
-    "id": "bren-sable",
-    "name": "Bren Sable",
-    "universe": "Lunar Archive"
+    "id": "dc-martian-manhunter",
+    "name": "Martian Manhunter",
+    "universe": "DC"
   },
   {
-    "id": "vesper-mori",
-    "name": "Vesper Mori",
-    "universe": "Crimson Frontier"
+    "id": "dc-cyborg",
+    "name": "Cyborg",
+    "universe": "DC"
   },
   {
-    "id": "elara-orris",
-    "name": "Elara Orris",
-    "universe": "Ember Dominion"
+    "id": "dc-shazam",
+    "name": "Shazam",
+    "universe": "DC"
   },
   {
-    "id": "astra-voss",
-    "name": "Astra Voss",
-    "universe": "Astral Covenant"
+    "id": "dc-green-arrow",
+    "name": "Green Arrow",
+    "universe": "DC"
   },
   {
-    "id": "avel-voss",
-    "name": "Avel Voss",
-    "universe": "Iron Wastes"
+    "id": "dc-black-canary",
+    "name": "Black Canary",
+    "universe": "DC"
   },
   {
-    "id": "tessa-mire",
-    "name": "Tessa Mire",
-    "universe": "Verdant Court"
+    "id": "dc-nightwing",
+    "name": "Nightwing",
+    "universe": "DC"
   },
   {
-    "id": "ziven-dawn",
-    "name": "Ziven Dawn",
-    "universe": "Tidebound Republic"
+    "id": "dc-joker",
+    "name": "Joker",
+    "universe": "DC"
   },
   {
-    "id": "juno-raine",
-    "name": "Juno Raine",
-    "universe": "Obsidian Order"
+    "id": "dc-harley-quinn",
+    "name": "Harley Quinn",
+    "universe": "DC"
   },
   {
-    "id": "kael-korr",
-    "name": "Kael Korr",
-    "universe": "Skyward Nomads"
+    "id": "dc-lex-luthor",
+    "name": "Lex Luthor",
+    "universe": "DC"
   },
   {
-    "id": "calyx-mire",
-    "name": "Calyx Mire",
-    "universe": "Hollow Realms"
+    "id": "dc-darkseid",
+    "name": "Darkseid",
+    "universe": "DC"
   },
   {
-    "id": "nolan-seraph",
-    "name": "Nolan Seraph",
-    "universe": "Glass Citadel"
+    "id": "dc-doomsday",
+    "name": "Doomsday",
+    "universe": "DC"
   },
   {
-    "id": "kova-mire",
-    "name": "Kova Mire",
-    "universe": "Thunder Pact"
+    "id": "dc-deathstroke",
+    "name": "Deathstroke",
+    "universe": "DC"
   },
   {
-    "id": "ziven-kestrel",
-    "name": "Ziven Kestrel",
-    "universe": "Lunar Archive"
+    "id": "dc-zatanna",
+    "name": "Zatanna",
+    "universe": "DC"
   },
   {
-    "id": "orin-sorn",
-    "name": "Orin Sorn",
-    "universe": "Crimson Frontier"
+    "id": "dc-john-constantine",
+    "name": "John Constantine",
+    "universe": "DC"
   },
   {
-    "id": "aeris-kane",
-    "name": "Aeris Kane",
-    "universe": "Ember Dominion"
+    "id": "marvel-spider-man-peter-parker",
+    "name": "Spider-Man (Peter Parker)",
+    "universe": "Marvel"
   },
   {
-    "id": "veyra-draven",
-    "name": "Veyra Draven",
-    "universe": "Astral Covenant"
+    "id": "marvel-iron-man-tony-stark",
+    "name": "Iron Man (Tony Stark)",
+    "universe": "Marvel"
   },
   {
-    "id": "maera-sorn",
-    "name": "Maera Sorn",
-    "universe": "Iron Wastes"
+    "id": "marvel-captain-america-steve-rogers",
+    "name": "Captain America (Steve Rogers)",
+    "universe": "Marvel"
   },
   {
-    "id": "fenna-dusk",
-    "name": "Fenna Dusk",
-    "universe": "Verdant Court"
+    "id": "marvel-thor-odinson",
+    "name": "Thor Odinson",
+    "universe": "Marvel"
   },
   {
-    "id": "lyra-dusk",
-    "name": "Lyra Dusk",
-    "universe": "Tidebound Republic"
+    "id": "marvel-hulk-bruce-banner",
+    "name": "Hulk (Bruce Banner)",
+    "universe": "Marvel"
   },
   {
-    "id": "avel-vael",
-    "name": "Avel Vael",
-    "universe": "Obsidian Order"
+    "id": "marvel-black-widow-natasha-romanoff",
+    "name": "Black Widow (Natasha Romanoff)",
+    "universe": "Marvel"
   },
   {
-    "id": "rowan-dawn",
-    "name": "Rowan Dawn",
-    "universe": "Skyward Nomads"
+    "id": "marvel-hawkeye-clint-barton",
+    "name": "Hawkeye (Clint Barton)",
+    "universe": "Marvel"
   },
   {
-    "id": "avel-auren",
-    "name": "Avel Auren",
-    "universe": "Hollow Realms"
+    "id": "marvel-scarlet-witch-wanda-maximoff",
+    "name": "Scarlet Witch (Wanda Maximoff)",
+    "universe": "Marvel"
   },
   {
-    "id": "fenna-kestrel",
-    "name": "Fenna Kestrel",
-    "universe": "Glass Citadel"
+    "id": "marvel-doctor-strange-stephen-strange",
+    "name": "Doctor Strange (Stephen Strange)",
+    "universe": "Marvel"
   },
   {
-    "id": "aris-ashcroft",
-    "name": "Aris Ashcroft",
-    "universe": "Thunder Pact"
+    "id": "marvel-black-panther-t-challa",
+    "name": "Black Panther (T'Challa)",
+    "universe": "Marvel"
   },
   {
-    "id": "rheia-mori",
-    "name": "Rheia Mori",
-    "universe": "Lunar Archive"
+    "id": "marvel-wolverine-logan",
+    "name": "Wolverine (Logan)",
+    "universe": "Marvel"
   },
   {
-    "id": "bren-ardent",
-    "name": "Bren Ardent",
-    "universe": "Crimson Frontier"
+    "id": "marvel-deadpool-wade-wilson",
+    "name": "Deadpool (Wade Wilson)",
+    "universe": "Marvel"
   },
   {
-    "id": "seris-sund",
-    "name": "Seris Sund",
-    "universe": "Ember Dominion"
+    "id": "marvel-loki-laufeyson",
+    "name": "Loki Laufeyson",
+    "universe": "Marvel"
   },
   {
-    "id": "mira-halcyon",
-    "name": "Mira Halcyon",
-    "universe": "Astral Covenant"
+    "id": "marvel-thanos",
+    "name": "Thanos",
+    "universe": "Marvel"
   },
   {
-    "id": "astra-kestrel",
-    "name": "Astra Kestrel",
-    "universe": "Iron Wastes"
+    "id": "marvel-captain-marvel-carol-danvers",
+    "name": "Captain Marvel (Carol Danvers)",
+    "universe": "Marvel"
   },
   {
-    "id": "zeran-kane",
-    "name": "Zeran Kane",
-    "universe": "Verdant Court"
+    "id": "marvel-magneto-erik-lehnsherr",
+    "name": "Magneto (Erik Lehnsherr)",
+    "universe": "Marvel"
   },
   {
-    "id": "mira-mire",
-    "name": "Mira Mire",
-    "universe": "Tidebound Republic"
+    "id": "marvel-professor-x-charles-xavier",
+    "name": "Professor X (Charles Xavier)",
+    "universe": "Marvel"
   },
   {
-    "id": "selene-sorn",
-    "name": "Selene Sorn",
-    "universe": "Obsidian Order"
+    "id": "marvel-storm-ororo-munroe",
+    "name": "Storm (Ororo Munroe)",
+    "universe": "Marvel"
   },
   {
-    "id": "liora-silvers",
-    "name": "Liora Silvers",
-    "universe": "Skyward Nomads"
+    "id": "marvel-doctor-doom-victor-von-doom",
+    "name": "Doctor Doom (Victor von Doom)",
+    "universe": "Marvel"
   },
   {
-    "id": "cassian-nox",
-    "name": "Cassian Nox",
-    "universe": "Hollow Realms"
+    "id": "marvel-silver-surfer",
+    "name": "Silver Surfer",
+    "universe": "Marvel"
   },
   {
-    "id": "riven-mori",
-    "name": "Riven Mori",
-    "universe": "Glass Citadel"
+    "id": "witcher-geralt-of-rivia",
+    "name": "Geralt of Rivia",
+    "universe": "The Witcher"
   },
   {
-    "id": "bastian-korr",
-    "name": "Bastian Korr",
-    "universe": "Thunder Pact"
+    "id": "witcher-ciri",
+    "name": "Ciri",
+    "universe": "The Witcher"
   },
   {
-    "id": "avel-vire",
-    "name": "Avel Vire",
-    "universe": "Lunar Archive"
+    "id": "witcher-yennefer-of-vengerberg",
+    "name": "Yennefer of Vengerberg",
+    "universe": "The Witcher"
   },
   {
-    "id": "neris-korr",
-    "name": "Neris Korr",
-    "universe": "Crimson Frontier"
+    "id": "witcher-triss-merigold",
+    "name": "Triss Merigold",
+    "universe": "The Witcher"
   },
   {
-    "id": "thane-cairn",
-    "name": "Thane Cairn",
-    "universe": "Ember Dominion"
+    "id": "witcher-vesemir",
+    "name": "Vesemir",
+    "universe": "The Witcher"
   },
   {
-    "id": "ysra-corven",
-    "name": "Ysra Corven",
-    "universe": "Astral Covenant"
+    "id": "witcher-lambert",
+    "name": "Lambert",
+    "universe": "The Witcher"
   },
   {
-    "id": "cyrin-mire",
-    "name": "Cyrin Mire",
-    "universe": "Iron Wastes"
+    "id": "witcher-eskel",
+    "name": "Eskel",
+    "universe": "The Witcher"
   },
   {
-    "id": "oren-kane",
-    "name": "Oren Kane",
-    "universe": "Verdant Court"
+    "id": "witcher-dandelion-jaskier",
+    "name": "Dandelion (Jaskier)",
+    "universe": "The Witcher"
   },
   {
-    "id": "ysra-dawn",
-    "name": "Ysra Dawn",
-    "universe": "Tidebound Republic"
+    "id": "witcher-zoltan-chivay",
+    "name": "Zoltan Chivay",
+    "universe": "The Witcher"
   },
   {
-    "id": "nyxen-halden",
-    "name": "Nyxen Halden",
-    "universe": "Obsidian Order"
+    "id": "witcher-regis",
+    "name": "Regis",
+    "universe": "The Witcher"
   },
   {
-    "id": "corin-morrow",
-    "name": "Corin Morrow",
-    "universe": "Skyward Nomads"
+    "id": "witcher-eredin-breacc-glas",
+    "name": "Eredin Breacc Glas",
+    "universe": "The Witcher"
   },
   {
-    "id": "sylas-dawn",
-    "name": "Sylas Dawn",
-    "universe": "Hollow Realms"
+    "id": "witcher-imlerith",
+    "name": "Imlerith",
+    "universe": "The Witcher"
   },
   {
-    "id": "arden-cairn",
-    "name": "Arden Cairn",
-    "universe": "Glass Citadel"
+    "id": "witcher-caranthir",
+    "name": "Caranthir",
+    "universe": "The Witcher"
   },
   {
-    "id": "dessa-ardent",
-    "name": "Dessa Ardent",
-    "universe": "Thunder Pact"
+    "id": "witcher-avallac-h",
+    "name": "Avallac'h",
+    "universe": "The Witcher"
   },
   {
-    "id": "orin-vael",
-    "name": "Orin Vael",
-    "universe": "Lunar Archive"
+    "id": "witcher-philippa-eilhart",
+    "name": "Philippa Eilhart",
+    "universe": "The Witcher"
   },
   {
-    "id": "astra-ashcroft",
-    "name": "Astra Ashcroft",
-    "universe": "Crimson Frontier"
+    "id": "witcher-keira-metz",
+    "name": "Keira Metz",
+    "universe": "The Witcher"
   },
   {
-    "id": "zeran-aster",
-    "name": "Zeran Aster",
-    "universe": "Ember Dominion"
+    "id": "witcher-fringilla-vigo",
+    "name": "Fringilla Vigo",
+    "universe": "The Witcher"
   },
   {
-    "id": "kael-solenne",
-    "name": "Kael Solenne",
-    "universe": "Astral Covenant"
+    "id": "witcher-letho-of-gulet",
+    "name": "Letho of Gulet",
+    "universe": "The Witcher"
   },
   {
-    "id": "aris-sorn",
-    "name": "Aris Sorn",
-    "universe": "Iron Wastes"
+    "id": "witcher-emhyr-var-emreis",
+    "name": "Emhyr var Emreis",
+    "universe": "The Witcher"
   },
   {
-    "id": "neris-ashcroft",
-    "name": "Neris Ashcroft",
-    "universe": "Verdant Court"
+    "id": "witcher-vilgefortz-of-roggeveen",
+    "name": "Vilgefortz of Roggeveen",
+    "universe": "The Witcher"
   },
   {
-    "id": "noel-cairn",
-    "name": "Noel Cairn",
-    "universe": "Tidebound Republic"
+    "id": "jjk-yuji-itadori",
+    "name": "Yuji Itadori",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-megumi-fushiguro",
+    "name": "Megumi Fushiguro",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-nobara-kugisaki",
+    "name": "Nobara Kugisaki",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-satoru-gojo",
+    "name": "Satoru Gojo",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-ryomen-sukuna",
+    "name": "Ryomen Sukuna",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-yuta-okkotsu",
+    "name": "Yuta Okkotsu",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-maki-zenin",
+    "name": "Maki Zenin",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-toge-inumaki",
+    "name": "Toge Inumaki",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-panda",
+    "name": "Panda",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-kento-nanami",
+    "name": "Kento Nanami",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-suguru-geto",
+    "name": "Suguru Geto",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-mahito",
+    "name": "Mahito",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-aoi-todo",
+    "name": "Aoi Todo",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-choso",
+    "name": "Choso",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-toji-fushiguro",
+    "name": "Toji Fushiguro",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-kinji-hakari",
+    "name": "Kinji Hakari",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-hajime-kashimo",
+    "name": "Hajime Kashimo",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-naobito-zenin",
+    "name": "Naobito Zenin",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-jogo",
+    "name": "Jogo",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "jjk-kenjaku",
+    "name": "Kenjaku",
+    "universe": "Jujutsu Kaisen"
+  },
+  {
+    "id": "aot-eren-yeager",
+    "name": "Eren Yeager",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-mikasa-ackerman",
+    "name": "Mikasa Ackerman",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-armin-arlert",
+    "name": "Armin Arlert",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-levi-ackerman",
+    "name": "Levi Ackerman",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-erwin-smith",
+    "name": "Erwin Smith",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-hange-zoe",
+    "name": "Hange Zoe",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-jean-kirstein",
+    "name": "Jean Kirstein",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-connie-springer",
+    "name": "Connie Springer",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-sasha-braus",
+    "name": "Sasha Braus",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-historia-reiss",
+    "name": "Historia Reiss",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-reiner-braun",
+    "name": "Reiner Braun",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-bertholdt-hoover",
+    "name": "Bertholdt Hoover",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-annie-leonhart",
+    "name": "Annie Leonhart",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-zeke-yeager",
+    "name": "Zeke Yeager",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-pieck-finger",
+    "name": "Pieck Finger",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-porco-galliard",
+    "name": "Porco Galliard",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-falco-grice",
+    "name": "Falco Grice",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-gabi-braun",
+    "name": "Gabi Braun",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-ymir-104th-corps",
+    "name": "Ymir (104th Corps)",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "aot-kenny-ackerman",
+    "name": "Kenny Ackerman",
+    "universe": "Attack on Titan"
+  },
+  {
+    "id": "bleach-ichigo-kurosaki",
+    "name": "Ichigo Kurosaki",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-rukia-kuchiki",
+    "name": "Rukia Kuchiki",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-orihime-inoue",
+    "name": "Orihime Inoue",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-uryu-ishida",
+    "name": "Uryu Ishida",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-renji-abarai",
+    "name": "Renji Abarai",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-byakuya-kuchiki",
+    "name": "Byakuya Kuchiki",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-kenpachi-zaraki",
+    "name": "Kenpachi Zaraki",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-toshiro-hitsugaya",
+    "name": "Toshiro Hitsugaya",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-kisuke-urahara",
+    "name": "Kisuke Urahara",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-sosuke-aizen",
+    "name": "Sosuke Aizen",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-genryusai-yamamoto",
+    "name": "Genryusai Yamamoto",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-yoruichi-shihoin",
+    "name": "Yoruichi Shihoin",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-shunsui-kyoraku",
+    "name": "Shunsui Kyoraku",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-mayuri-kurotsuchi",
+    "name": "Mayuri Kurotsuchi",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-ulquiorra-cifer",
+    "name": "Ulquiorra Cifer",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-grimmjow-jaegerjaquez",
+    "name": "Grimmjow Jaegerjaquez",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-nelliel-tu-odelschwanck",
+    "name": "Nelliel Tu Odelschwanck",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-jugram-haschwalth",
+    "name": "Jugram Haschwalth",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-yhwach",
+    "name": "Yhwach",
+    "universe": "Bleach"
+  },
+  {
+    "id": "bleach-gin-ichimaru",
+    "name": "Gin Ichimaru",
+    "universe": "Bleach"
   }
 ]
