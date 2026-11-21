@@ -1,0 +1,13 @@
+{
+  "name": "daily-stat-clash",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Public daily stat character matchup web app, no email and no Supabase",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test server/test/*.test.js"
+  }
+}
