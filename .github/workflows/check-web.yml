@@ -1,0 +1,55 @@
+name: Validate independent game interface
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'supabase/**'
+      - 'app/public/assets/portraits/**'
+      - '.github/workflows/check-web.yml'
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          node --check web/app.js
+          node --check web/config.js
+      - name: Validate HTML bindings, RPC contracts, seed and portraits
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const assert = require('node:assert/strict');
+          const html = fs.readFileSync('web/index.html', 'utf8');
+          const app = fs.readFileSync('web/app.js', 'utf8');
+          const config = fs.readFileSync('web/config.js', 'utf8');
+          const schema = fs.readFileSync('supabase/schema.sql', 'utf8');
+          const characters = JSON.parse(fs.readFileSync('app/src/data/characters.json', 'utf8'));
+          const htmlIDs = new Set([...html.matchAll(/id="([^"]+)"/g)].map(m => m[1]));
+          const references = [...app.matchAll(/\$\('([^']+)'\)/g)].map(m => m[1]);
+          const jsCreated = new Set([...app.matchAll(/\.id\s*=\s*'([^']+)'/g)].map(m => m[1]));
+          const missing = [...new Set(references)].filter(id => !htmlIDs.has(id) && !jsCreated.has(id));
+          assert.deepEqual(missing, [], 'Missing DOM elements referenced by app.js');
+          assert.equal(characters.length, 101, 'The 101-character roster is incomplete');
+          for (const character of characters) {
+            assert.match(character.id, /^[a-z0-9-]+$/);
+            for (const stat of ['strength','dexterity','battle_iq','endurance','hacks','iq']) {
+              assert.ok(Number.isInteger(character[stat]) && character[stat]>=0 && character[stat]<=100, 'Invalid score '+character.id+'/'+stat);
+            }
+            assert.ok(fs.existsSync('app/public/assets/portraits/'+character.id+'.svg'),'Missing portrait '+character.id);
+          }
+          for (const name of ['game_state','game_draw','game_assign','game_submit','game_leaderboard','game_settle_day']) {
+            assert.ok(schema.includes('function public.'+name+'('), 'Missing RPC/function '+name);
+          }
+          assert.ok(config.includes('window.DAILY_CLASH_CONFIG'), 'Missing frontend configuration binding');
+          assert.ok(html.includes('app.js') && html.includes('config.js') && html.includes('styles.css'));
+          assert.ok(fs.existsSync('supabase/seed.sql'));
+          console.log('PASS: JS syntax, DOM, SQL API, 101 characters, SVG portraits');
+          NODE
