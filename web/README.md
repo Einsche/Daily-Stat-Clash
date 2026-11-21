@@ -1,13 +1,17 @@
-# Daily Stat Clash — current public guest mode
+# Current public Daily Stat Clash — crossover guest mode
 
-https://einsche.github.io/Daily-Stat-Clash/
+URL: https://einsche.github.io/Daily-Stat-Clash/
 
-No Login / Create Account pages. Press **PLAY AS GUEST** and the browser creates a random nickname automatically. No email or password required.
+The guest character roster has **160 characters from exactly eight universes**: Hunter x Hunter, Naruto, DC, Marvel, The Witcher, Jujutsu Kaisen, Attack on Titan and Bleach, 20 per universe.
 
-The entire current guest experience runs on GitHub Pages without Supabase, Railway, Node.js hosting, or any other account/database provider. The browser loads `guest-roster.json` (101 characters, names/worlds/IDs only), draws one unused character at a time, and saves six distinct stat assignments in `localStorage`. Submitting locks today's selection. A new round begins at 00:00 Istanbul time. Previous guest submissions can be viewed locally.
+The old 101 original characters are no longer part of the active draw pool. `guest-roster.json` contains only character IDs, names and universe names. All six scores are kept out of the browser bundle (though the source repository's full dataset is public).
 
-**Limitations:** This is a single-browser guest mode. Opponent matching, shared account identity, cross-device synchronization, score calculation and global rankings are not enabled. Do not display guessed win totals.
+Press **PLAY AS GUEST** to get a random nickname and a first character. Each assigned character automatically draws the next one, until six distinct picks are assigned. Submit locks the current browser's daily lineup. No sign-in or account provider is needed.
 
-The Node.js + SQLite backend remains in `server/` for a possible later full multiplayer release; the current public site makes no API calls to it. Scores are intentionally omitted from the static guest roster.
+The browser uses `localStorage` for nickname, current card, picks and prior submissions. The eight-franchise revision clears prior guest lineups and submission history on first load, since those records referenced the retired original characters. Names are retained.
 
-After changes to `web/`, GitHub Actions republishes the Pages site. The existing `.github/workflows/pages.yml` copies all 101 portraits to their required paths.
+This is a local-only demo. Scored multiplayer matches, cross-device accounts and public leaderboards are not yet active.
+
+Official character likenesses/portraits are not included. The UI uses initials with universe-specific gradient colors until properly licensed or user-provided artwork is available. The earlier original-character portrait assets are no longer packaged into GitHub Pages.
+
+The Node.js/SQLite server in `server/` is optional future multiplayer infrastructure and is not currently deployed.
