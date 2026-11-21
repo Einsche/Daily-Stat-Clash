@@ -64,6 +64,7 @@ function mount(storage,clock,{deferRoster=false}={}) {
     return e;
   });
   const characterDetails=new Element('div');
+  const characterDisplay=new Element('div');
   const document={
     baseURI:'https://einsche.github.io/Daily-Stat-Clash/',
     createElement(tag){const element=new Element(tag);created.push(element);return element;},
@@ -71,6 +72,7 @@ function mount(storage,clock,{deferRoster=false}={}) {
     getElementById(id){return ids.get(id)||created.find(e=>e.id===id)||null;},
     querySelector(selector){
       if(selector==='.draw-panel .character-details')return characterDetails;
+      if(selector==='.character-display')return characterDisplay;
       throw Error('Unexpected query selector '+selector);
     },
     querySelectorAll(selector){
