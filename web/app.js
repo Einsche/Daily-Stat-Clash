@@ -1,9 +1,9 @@
-/* Daily Stat Clash — public GitHub Pages client, server-side username/password RPC */
+/* Daily Stat Clash — independent username/password client for Node.js + SQLite */
 (() => {
   'use strict';
   const config = window.DAILY_CLASH_CONFIG || {};
-  const ready = Boolean(config.supabaseUrl && config.supabaseAnonKey);
-  const apiBase = String(config.supabaseUrl || '').replace(/\/+$/, '');
+  const ready = Boolean(config.apiBase) || !window.location.hostname.endsWith('github.io');
+  const apiBase = String(config.apiBase || new URL('.', document.baseURI).href).replace(/\/+$/, '');
   const sessionKey = 'daily-stat-clash.username-session.v2';
   const stats = [
     ['strength','STR','Strength','Raw physical power'],['dexterity','DEX','Dexterity','Speed & precision'],
@@ -53,29 +53,49 @@
     if (!path || !/^\/Daily-Stat-Clash\/app\/public\/assets\/portraits\/[a-z0-9-]+\.svg$/.test(path)) return '';
     return path;
   }
-  // The publishable/anon key only identifies the Supabase project.
-  // All game authorization happens inside PostgreSQL RPCs using a server-hashed session token.
-  // Never expose a service_role key or a password hash in the browser.
-  // New sb_publishable_* keys are NOT JWTs: never send them as Authorization Bearer.
+  // Never trust localStorage for identity. The server verifies every bearer token.
+  // Passwords travel over HTTPS and are never stored in the browser.
   async function rpc(name,body={}) {
-    if(!ready) throw Error('Account server not connected yet. Configure the Supabase project in web/config.js.');
-    const payload = {...body};
-    if (['game_state','game_draw','game_assign','game_submit','game_logout'].includes(name)) {
-      payload.p_token = session?.token || null;
+    if(!ready) throw Error('The game server has not been connected to this GitHub Pages site.');
+    const endpoints={
+      game_state:['GET','/api/state'],
+      game_leaderboard:['GET','/api/leaderboard'],
+      game_register:['POST','/api/auth/register'],
+      game_login:['POST','/api/auth/login'],
+      game_logout:['POST','/api/auth/logout'],
+      game_draw:['POST','/api/draw'],
+      game_assign:['POST','/api/assign'],
+      game_submit:['POST','/api/submit']
+    };
+    const entry=endpoints[name];
+    if(!entry)throw Error('Unknown game operation.');
+    const [method,route]=entry;
+    let address=apiBase+route;
+    if(name==='game_leaderboard'){
+      address+='?period='+encodeURIComponent(body.p_period || 'weekly');
     }
-    const res=await fetch(apiBase+'/rest/v1/rpc/'+name,{
-      method:'POST',
-      cache:'no-store',
-      headers:{
-        'Content-Type':'application/json',
-        'apikey':config.supabaseAnonKey
-      },
-      body:JSON.stringify(payload)
-    });
-    const data=await res.json().catch(()=>null);
-    if(!res.ok) throw Error(data?.message||data?.error||'Server request failed ('+res.status+')');
-    if(data && typeof data==='object' && data.error) throw Error(data.error);
-    return data;
+    const requestBody=name==='game_register'||name==='game_login'
+      ? {username:body.p_handle,password:body.p_password}
+      : name==='game_assign'?{stat:body.p_stat}:{};
+    const headers={'Accept':'application/json'};
+    if(method==='POST')headers['Content-Type']='application/json';
+    if(session?.token)headers['Authorization']='Bearer '+session.token;
+    let response;
+    try {
+      response=await fetch(address,{
+        method,cache:'no-store',headers,
+        ...(method==='POST'?{body:JSON.stringify(requestBody)}:{})
+      });
+    }catch{
+      throw Error('Cannot reach the game server. Check the connection and try again.');
+    }
+    const result=await response.json().catch(()=>null);
+    if(!response.ok){
+      const error=Error(result?.error || 'Server request failed ('+response.status+').');
+      error.status=response.status;
+      throw error;
+    }
+    return result;
   }
   function el(tag,cls,txt) {
     const n=document.createElement(tag);
@@ -181,7 +201,7 @@
     }catch(e){holder.replaceChildren(el('div','empty-state',e.message||'Leaderboard unavailable.'));}
   }
   async function loadState() {
-    if(!ready){redraw();drawBoard();notify('Account server must be connected before sign-up and login can work.',true);return;}
+    if(!ready){redraw();drawBoard();notify('The GitHub Pages frontend needs a game-server URL. The Node.js version works independently.',true);return;}
     try {
       state=await rpc('game_state');
       if(session && !state?.user) {
@@ -189,7 +209,16 @@
         notify('Session expired. Please sign in again.',true);
       }
       redraw();await drawBoard();
-    } catch(e) {showError(e);redraw();}
+    } catch(e) {
+      if(e.status===401){
+        setSession(null);
+        state=null;
+        notify('Your session has expired. Please sign in again.',true);
+        try{state=await rpc('game_state');}catch{}
+        redraw();await drawBoard();return;
+      }
+      showError(e);redraw();
+    }
   }
   async function action(name,args={}) {
     if(busy)return;
@@ -223,7 +252,7 @@
   async function submitAuth(event) {
     event.preventDefault();
     if(!ready){
-      $('auth-error').textContent='Account server not configured. Connect Supabase to activate sign-up and login.';
+      $('auth-error').textContent='Game server not connected yet. Use the public Node.js deployment.';
       $('auth-error').hidden=false;return;
     }
     const username=$('signup-handle').value.trim();
