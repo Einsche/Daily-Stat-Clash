@@ -1,0 +1,17 @@
+.git
+.github
+node_modules
+app/packages
+app/migrations
+app/src
+!app/src/data
+app/public
+!app/public/assets
+!app/public/assets/portraits
+app/bun.lock
+app/*.md
+supabase
+**/.DS_Store
+**/*.sqlite
+**/*.sqlite-wal
+**/*.sqlite-shm
