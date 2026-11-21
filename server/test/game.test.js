@@ -25,7 +25,7 @@ test('persistent multiuser registration, password, six draws, settlement and his
   let now=new Date('2026-11-22T13:00:00Z');
   let game=makeGame({dbPath,clock:()=>now});
   try{
-    assert.equal(game.state().totalCharacters,101);
+    assert.equal(game.state().totalCharacters,160);
     const alice=await game.register('AlicePlayer','ALongPassword!2026');
     const bob=await game.register('BobPlayer','AnotherLongPassword2026');
     assert.match(alice.token,/^[0-9a-f]{64}$/);
@@ -80,7 +80,7 @@ test('persistent multiuser registration, password, six draws, settlement and his
     game=makeGame({dbPath,clock:()=>now});
     const restored=game.state(bob.token);
     assert.equal(restored.history.length,1,'Data persists across a full restart');
-    assert.equal(restored.totalCharacters,101);
+    assert.equal(restored.totalCharacters,160);
     assert.equal((await game.login('AlicePlayer','ALongPassword!2026')).user.handle,'AlicePlayer');
   }finally{game.close();cleanup(dir);}
 });
@@ -119,11 +119,14 @@ test('public HTTP frontend, API, login and strict CORS',async()=>{
     const guestRosterResponse=await fetch(url+'/guest-roster.json');
     assert.equal(guestRosterResponse.status,200);
     const guestRoster=await guestRosterResponse.json();
-    assert.equal(guestRoster.length,101);
+    assert.equal(guestRoster.length,160);
     assert.ok(guestRoster.every(c=>c.strength===undefined&&c.hacks===undefined));
-    const portrait=await fetch(url+'/app/public/assets/portraits/bren-pell.svg');
-    assert.equal(portrait.status,200);
-    assert.match(await portrait.text(),/<svg/);
+    const brandIcon=await fetch(url+'/favicon.svg');
+    assert.equal(brandIcon.status,200);
+    assert.match(await brandIcon.text(),/<svg/);
+    assert.ok(guestRoster.some(c=>c.name==='Naruto Uzumaki'));
+    assert.ok(guestRoster.some(c=>c.name==='Superman'));
+    assert.ok(guestRoster.some(c=>c.name==='Ichigo Kurosaki'));
     const publicBoard=await fetch(url+'/api/leaderboard?period=weekly');
     assert.equal(publicBoard.status,200);
     assert.deepEqual(await publicBoard.json(),[]);
@@ -155,4 +158,36 @@ test('public HTTP frontend, API, login and strict CORS',async()=>{
     await new Promise(resolve=>server.close(resolve));
     game.close();cleanup(dir);
   }
+});
+
+
+test('reset replaces all old-universe characters, clears picks and scores but retains users',async()=>{
+  const {dir,dbPath}=createTestDb();
+  const oldPath=path.join(dir,'old-roster.json');
+  const legacy=Array.from({length:7},(_,i)=>({
+    id:'legacy-fighter-'+i,name:'Old Fighter '+i,universe:'Retired Universe',
+    portrait_url:null,strength:50,dexterity:50,battle_iq:50,
+    endurance:50,hacks:50,iq:50
+  }));
+  fs.writeFileSync(oldPath,JSON.stringify(legacy));
+  const clock=()=>new Date('2026-11-22T13:00:00Z');
+  let game=makeGame({dbPath,charactersPath:oldPath,clock});
+  try{
+    const {token}=await game.register('ResetTester','SomeLongPassword2026');
+    const old=game.draw(token);
+    assert.ok(old.current.id.startsWith('legacy-fighter-'));
+    game.assign(token,'strength');
+    game.close();
+    game=makeGame({dbPath,clock});
+    assert.equal(game.state().totalCharacters,160);
+    assert.equal(game.state(token).picks.length,0,'Old picks must be cleared');
+    assert.equal(game.state(token).history.length,0,'Old results must be cleared');
+    assert.equal(game.getUser(token).username,'ResetTester','Account survives character reset');
+    const current=game.draw(token).current;
+    assert.ok(/^(hxh|naruto|dc|marvel|witcher|jjk|aot|bleach)-/.test(current.id));
+    assert.equal(current.universe==='Retired Universe',false);
+    game.close();
+    game=makeGame({dbPath,clock});
+    assert.equal(game.state(token).current.id,current.id,'Unchanged roster preserves the new draw');
+  }finally{game.close();cleanup(dir);}
 });
