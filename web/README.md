@@ -1,23 +1,24 @@
-# Standalone GitHub Pages + Supabase deployment
+# Daily Stat Clash — independent GitHub Pages deployment
 
-This is an independent static frontend: it does not use Higgsfield.
+Public web interface with username/password accounts only. **No email, Supabase GoTrue signup, or email confirmation required.**
 
-**Frontend:** GitHub Pages, with `web/index.html`, `web/app.js`, `web/styles.css`.
-**Backend:** Supabase Auth and PostgreSQL RPC functions for accounts, draws, submissions, daily head-to-head scoring, match history and leaderboards.
+## Production setup
 
-## Setup
+1. Enable GitHub Pages in [repository Settings → Pages](https://github.com/Einsche/Daily-Stat-Clash/settings/pages). Under *Build and deployment → Source*, choose **GitHub Actions**.
+2. Trigger/retry the [Pages workflow](https://github.com/Einsche/Daily-Stat-Clash/actions/workflows/pages.yml). It publishes `web/` plus 101 character portraits at the path required by `supabase/seed.sql`.
+3. Create and connect a Supabase project. Use its SQL editor to run `supabase/schema.sql` then `supabase/seed.sql` (a fresh database; the previous email-auth schema is superseded). Optionally run `supabase/schedule.sql` for midnight reconciliation using pg_cron. The read API will also settle missed prior days on next visit.
+4. Fill in `web/config.js` using Supabase Project Settings → API: your public project URL and the **publishable/anon key** only. Do not publish a service_role key, JWT signing secret, DB password or personal access token.
+5. Load **https://einsche.github.io/Daily-Stat-Clash/** in two browsers. Register with *username and password*, sign out and log back in, draw six distinct characters, submit and view results after settlement.
 
-1. Enable **GitHub Actions** as the source under [GitHub Settings → Pages](https://github.com/Einsche/Daily-Stat-Clash/settings/pages). This is mandatory: GitHub's API denied automatic Pages enablement with the current integration token.
-2. [Rerun the Pages publishing workflow](https://github.com/Einsche/Daily-Stat-Clash/actions/workflows/pages.yml). The action copies all 101 portraits from `app/public/assets/portraits` into the Pages artifact, preserving their URL paths.
-3. Create/connect a Supabase project. Run `supabase/schema.sql` followed by `supabase/seed.sql` in the SQL editor. Then run `supabase/schedule.sql` to enable automatic settlement at **21:00 UTC / 00:00 Europe/Istanbul**. The fallback in `game_state` settles yesterday when a user next loads the game.
-4. Enable email/password under Supabase Authentication → Providers → Email. Set Supabase Authentication → URL Configuration Site URL and redirect allow-list to `https://einsche.github.io/Daily-Stat-Clash/`.
-5. In `web/config.js` fill in the Supabase Project URL and the **public publishable/anon** key. These are client-facing values. Never put a service-role key, database password, JWT secret or personal access token in that file.
-6. Test in a private browsing window and normal window: account registration, email confirmation (if enabled), login, a six-character round, submit, another user's round, next-day settlement and rankings.
+The web page is public; accounts/sessions/selection state and score calculation live in Supabase PostgreSQL. Users never need email. Passwords are bcrypt hashed server-side, sessions are hash-stored random bearer tokens expiring after 30 days, and login attempts are throttled.
 
-The application URL will be **https://einsche.github.io/Daily-Stat-Clash/** once GitHub Pages has published successfully.
+## Important limitations
 
-## Security and limitations
+- GitHub Pages hosts only the frontend. It cannot securely store passwords or run the matchmaking database.
+- A connected Supabase project is required to make actual signups and login function.
+- The GitHub Pages deployment previously failed at `actions/configure-pages` because the current GitHub integration cannot enable Pages at the account settings level; the repository owner must enable GitHub Actions as the source.
+- The character scoring seed is currently visible in public Git history. Rotate these values privately before launch, otherwise players could cheat.
+- No email means password recovery requires a separately designed administrator or recovery-code process.
+- For public traffic beyond an initial limited beta, add edge-level rate limits and bot protection.
 
-The SQL backend stores secret stats in `game_private`, protects them with database roles and only returns allowed metadata via RPC. Auth is handled by Supabase GoTrue. However, the numerical ratings are visible in this public repository's seed and Git history; rotate ratings to a private-only scoring source before a competitive launch.
-
-Current status: Frontend and SQL source are ready; the site is not publicly deployed, and sign-up cannot be tested until a Supabase project and Pages site are configured.
+The username-only backend's PostgreSQL integration tests run in `.github/workflows/check-db.yml`.
