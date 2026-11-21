@@ -1,0 +1,507 @@
+[
+  {
+    "id": "bren-pell",
+    "name": "Bren Pell",
+    "universe": "Ember Dominion"
+  },
+  {
+    "id": "zeran-valehart",
+    "name": "Zeran Valehart",
+    "universe": "Astral Covenant"
+  },
+  {
+    "id": "zeran-halcyon",
+    "name": "Zeran Halcyon",
+    "universe": "Iron Wastes"
+  },
+  {
+    "id": "ysra-aster",
+    "name": "Ysra Aster",
+    "universe": "Verdant Court"
+  },
+  {
+    "id": "liora-ardent",
+    "name": "Liora Ardent",
+    "universe": "Tidebound Republic"
+  },
+  {
+    "id": "aris-kane",
+    "name": "Aris Kane",
+    "universe": "Obsidian Order"
+  },
+  {
+    "id": "maera-rook",
+    "name": "Maera Rook",
+    "universe": "Skyward Nomads"
+  },
+  {
+    "id": "fenna-hearth",
+    "name": "Fenna Hearth",
+    "universe": "Hollow Realms"
+  },
+  {
+    "id": "rheia-ashcroft",
+    "name": "Rheia Ashcroft",
+    "universe": "Glass Citadel"
+  },
+  {
+    "id": "liora-auren",
+    "name": "Liora Auren",
+    "universe": "Thunder Pact"
+  },
+  {
+    "id": "lucen-kestrel",
+    "name": "Lucen Kestrel",
+    "universe": "Lunar Archive"
+  },
+  {
+    "id": "cassian-valehart",
+    "name": "Cassian Valehart",
+    "universe": "Crimson Frontier"
+  },
+  {
+    "id": "neris-raine",
+    "name": "Neris Raine",
+    "universe": "Ember Dominion"
+  },
+  {
+    "id": "thane-merrin",
+    "name": "Thane Merrin",
+    "universe": "Astral Covenant"
+  },
+  {
+    "id": "tarin-silvers",
+    "name": "Tarin Silvers",
+    "universe": "Iron Wastes"
+  },
+  {
+    "id": "evren-kestrel",
+    "name": "Evren Kestrel",
+    "universe": "Verdant Court"
+  },
+  {
+    "id": "avel-hollow",
+    "name": "Avel Hollow",
+    "universe": "Tidebound Republic"
+  },
+  {
+    "id": "seris-vire",
+    "name": "Seris Vire",
+    "universe": "Obsidian Order"
+  },
+  {
+    "id": "rowan-lorien",
+    "name": "Rowan Lorien",
+    "universe": "Skyward Nomads"
+  },
+  {
+    "id": "varya-valehart",
+    "name": "Varya Valehart",
+    "universe": "Hollow Realms"
+  },
+  {
+    "id": "seris-seraph",
+    "name": "Seris Seraph",
+    "universe": "Glass Citadel"
+  },
+  {
+    "id": "ziven-korr",
+    "name": "Ziven Korr",
+    "universe": "Thunder Pact"
+  },
+  {
+    "id": "kael-mori",
+    "name": "Kael Mori",
+    "universe": "Lunar Archive"
+  },
+  {
+    "id": "maera-sund",
+    "name": "Maera Sund",
+    "universe": "Crimson Frontier"
+  },
+  {
+    "id": "ysra-vire",
+    "name": "Ysra Vire",
+    "universe": "Ember Dominion"
+  },
+  {
+    "id": "aeris-ardent",
+    "name": "Aeris Ardent",
+    "universe": "Astral Covenant"
+  },
+  {
+    "id": "lyra-solenne",
+    "name": "Lyra Solenne",
+    "universe": "Iron Wastes"
+  },
+  {
+    "id": "halen-sable",
+    "name": "Halen Sable",
+    "universe": "Verdant Court"
+  },
+  {
+    "id": "evren-pell",
+    "name": "Evren Pell",
+    "universe": "Tidebound Republic"
+  },
+  {
+    "id": "vale-orris",
+    "name": "Vale Orris",
+    "universe": "Obsidian Order"
+  },
+  {
+    "id": "thane-halden",
+    "name": "Thane Halden",
+    "universe": "Skyward Nomads"
+  },
+  {
+    "id": "rheia-pell",
+    "name": "Rheia Pell",
+    "universe": "Hollow Realms"
+  },
+  {
+    "id": "varya-thorn",
+    "name": "Varya Thorn",
+    "universe": "Glass Citadel"
+  },
+  {
+    "id": "eryn-kane",
+    "name": "Eryn Kane",
+    "universe": "Thunder Pact"
+  },
+  {
+    "id": "darian-korr",
+    "name": "Darian Korr",
+    "universe": "Lunar Archive"
+  },
+  {
+    "id": "ziven-rook",
+    "name": "Ziven Rook",
+    "universe": "Crimson Frontier"
+  },
+  {
+    "id": "aris-vael",
+    "name": "Aris Vael",
+    "universe": "Ember Dominion"
+  },
+  {
+    "id": "tarin-auren",
+    "name": "Tarin Auren",
+    "universe": "Astral Covenant"
+  },
+  {
+    "id": "varya-hearth",
+    "name": "Varya Hearth",
+    "universe": "Iron Wastes"
+  },
+  {
+    "id": "riven-morrow",
+    "name": "Riven Morrow",
+    "universe": "Verdant Court"
+  },
+  {
+    "id": "cyrin-dusk",
+    "name": "Cyrin Dusk",
+    "universe": "Tidebound Republic"
+  },
+  {
+    "id": "dessa-korr",
+    "name": "Dessa Korr",
+    "universe": "Obsidian Order"
+  },
+  {
+    "id": "lucen-sund",
+    "name": "Lucen Sund",
+    "universe": "Skyward Nomads"
+  },
+  {
+    "id": "riven-veylan",
+    "name": "Riven Veylan",
+    "universe": "Hollow Realms"
+  },
+  {
+    "id": "thane-draven",
+    "name": "Thane Draven",
+    "universe": "Glass Citadel"
+  },
+  {
+    "id": "morrow-orris",
+    "name": "Morrow Orris",
+    "universe": "Thunder Pact"
+  },
+  {
+    "id": "bren-sable",
+    "name": "Bren Sable",
+    "universe": "Lunar Archive"
+  },
+  {
+    "id": "vesper-mori",
+    "name": "Vesper Mori",
+    "universe": "Crimson Frontier"
+  },
+  {
+    "id": "elara-orris",
+    "name": "Elara Orris",
+    "universe": "Ember Dominion"
+  },
+  {
+    "id": "astra-voss",
+    "name": "Astra Voss",
+    "universe": "Astral Covenant"
+  },
+  {
+    "id": "avel-voss",
+    "name": "Avel Voss",
+    "universe": "Iron Wastes"
+  },
+  {
+    "id": "tessa-mire",
+    "name": "Tessa Mire",
+    "universe": "Verdant Court"
+  },
+  {
+    "id": "ziven-dawn",
+    "name": "Ziven Dawn",
+    "universe": "Tidebound Republic"
+  },
+  {
+    "id": "juno-raine",
+    "name": "Juno Raine",
+    "universe": "Obsidian Order"
+  },
+  {
+    "id": "kael-korr",
+    "name": "Kael Korr",
+    "universe": "Skyward Nomads"
+  },
+  {
+    "id": "calyx-mire",
+    "name": "Calyx Mire",
+    "universe": "Hollow Realms"
+  },
+  {
+    "id": "nolan-seraph",
+    "name": "Nolan Seraph",
+    "universe": "Glass Citadel"
+  },
+  {
+    "id": "kova-mire",
+    "name": "Kova Mire",
+    "universe": "Thunder Pact"
+  },
+  {
+    "id": "ziven-kestrel",
+    "name": "Ziven Kestrel",
+    "universe": "Lunar Archive"
+  },
+  {
+    "id": "orin-sorn",
+    "name": "Orin Sorn",
+    "universe": "Crimson Frontier"
+  },
+  {
+    "id": "aeris-kane",
+    "name": "Aeris Kane",
+    "universe": "Ember Dominion"
+  },
+  {
+    "id": "veyra-draven",
+    "name": "Veyra Draven",
+    "universe": "Astral Covenant"
+  },
+  {
+    "id": "maera-sorn",
+    "name": "Maera Sorn",
+    "universe": "Iron Wastes"
+  },
+  {
+    "id": "fenna-dusk",
+    "name": "Fenna Dusk",
+    "universe": "Verdant Court"
+  },
+  {
+    "id": "lyra-dusk",
+    "name": "Lyra Dusk",
+    "universe": "Tidebound Republic"
+  },
+  {
+    "id": "avel-vael",
+    "name": "Avel Vael",
+    "universe": "Obsidian Order"
+  },
+  {
+    "id": "rowan-dawn",
+    "name": "Rowan Dawn",
+    "universe": "Skyward Nomads"
+  },
+  {
+    "id": "avel-auren",
+    "name": "Avel Auren",
+    "universe": "Hollow Realms"
+  },
+  {
+    "id": "fenna-kestrel",
+    "name": "Fenna Kestrel",
+    "universe": "Glass Citadel"
+  },
+  {
+    "id": "aris-ashcroft",
+    "name": "Aris Ashcroft",
+    "universe": "Thunder Pact"
+  },
+  {
+    "id": "rheia-mori",
+    "name": "Rheia Mori",
+    "universe": "Lunar Archive"
+  },
+  {
+    "id": "bren-ardent",
+    "name": "Bren Ardent",
+    "universe": "Crimson Frontier"
+  },
+  {
+    "id": "seris-sund",
+    "name": "Seris Sund",
+    "universe": "Ember Dominion"
+  },
+  {
+    "id": "mira-halcyon",
+    "name": "Mira Halcyon",
+    "universe": "Astral Covenant"
+  },
+  {
+    "id": "astra-kestrel",
+    "name": "Astra Kestrel",
+    "universe": "Iron Wastes"
+  },
+  {
+    "id": "zeran-kane",
+    "name": "Zeran Kane",
+    "universe": "Verdant Court"
+  },
+  {
+    "id": "mira-mire",
+    "name": "Mira Mire",
+    "universe": "Tidebound Republic"
+  },
+  {
+    "id": "selene-sorn",
+    "name": "Selene Sorn",
+    "universe": "Obsidian Order"
+  },
+  {
+    "id": "liora-silvers",
+    "name": "Liora Silvers",
+    "universe": "Skyward Nomads"
+  },
+  {
+    "id": "cassian-nox",
+    "name": "Cassian Nox",
+    "universe": "Hollow Realms"
+  },
+  {
+    "id": "riven-mori",
+    "name": "Riven Mori",
+    "universe": "Glass Citadel"
+  },
+  {
+    "id": "bastian-korr",
+    "name": "Bastian Korr",
+    "universe": "Thunder Pact"
+  },
+  {
+    "id": "avel-vire",
+    "name": "Avel Vire",
+    "universe": "Lunar Archive"
+  },
+  {
+    "id": "neris-korr",
+    "name": "Neris Korr",
+    "universe": "Crimson Frontier"
+  },
+  {
+    "id": "thane-cairn",
+    "name": "Thane Cairn",
+    "universe": "Ember Dominion"
+  },
+  {
+    "id": "ysra-corven",
+    "name": "Ysra Corven",
+    "universe": "Astral Covenant"
+  },
+  {
+    "id": "cyrin-mire",
+    "name": "Cyrin Mire",
+    "universe": "Iron Wastes"
+  },
+  {
+    "id": "oren-kane",
+    "name": "Oren Kane",
+    "universe": "Verdant Court"
+  },
+  {
+    "id": "ysra-dawn",
+    "name": "Ysra Dawn",
+    "universe": "Tidebound Republic"
+  },
+  {
+    "id": "nyxen-halden",
+    "name": "Nyxen Halden",
+    "universe": "Obsidian Order"
+  },
+  {
+    "id": "corin-morrow",
+    "name": "Corin Morrow",
+    "universe": "Skyward Nomads"
+  },
+  {
+    "id": "sylas-dawn",
+    "name": "Sylas Dawn",
+    "universe": "Hollow Realms"
+  },
+  {
+    "id": "arden-cairn",
+    "name": "Arden Cairn",
+    "universe": "Glass Citadel"
+  },
+  {
+    "id": "dessa-ardent",
+    "name": "Dessa Ardent",
+    "universe": "Thunder Pact"
+  },
+  {
+    "id": "orin-vael",
+    "name": "Orin Vael",
+    "universe": "Lunar Archive"
+  },
+  {
+    "id": "astra-ashcroft",
+    "name": "Astra Ashcroft",
+    "universe": "Crimson Frontier"
+  },
+  {
+    "id": "zeran-aster",
+    "name": "Zeran Aster",
+    "universe": "Ember Dominion"
+  },
+  {
+    "id": "kael-solenne",
+    "name": "Kael Solenne",
+    "universe": "Astral Covenant"
+  },
+  {
+    "id": "aris-sorn",
+    "name": "Aris Sorn",
+    "universe": "Iron Wastes"
+  },
+  {
+    "id": "neris-ashcroft",
+    "name": "Neris Ashcroft",
+    "universe": "Verdant Court"
+  },
+  {
+    "id": "noel-cairn",
+    "name": "Noel Cairn",
+    "universe": "Tidebound Republic"
+  }
+]
