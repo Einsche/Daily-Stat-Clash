@@ -22,3 +22,23 @@
   .brand-name{font-size:11px}
   .top-actions .user-handle{max-width:125px}
 }
+
+/* Distinct abstract color treatments, not copyrighted franchise artwork.
+   Character initials replace the retired original-character portraits. */
+.portrait-fallback {
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  font-weight:800;
+  font-size:clamp(74px,9vw,118px);
+  letter-spacing:-.08em;
+  color:rgba(255,241,251,.79);
+  text-shadow:0 5px 38px rgba(0,0,0,.28);
+  z-index:1;
+}
+.character-display[data-universe="Hunter x Hunter"]{background:radial-gradient(ellipse at 50% 35%,#477e71,#274c47 47%,#14292b 95%)}
+.character-display[data-universe="Naruto"]{background:radial-gradient(ellipse at 50% 35%,#b47942,#604331 47%,#2d252a 95%)}
+.character-display[data-universe="DC"]{background:radial-gradient(ellipse at 50% 35%,#465f92,#303b61 47%,#1a2037 95%)}
+.character-display[data-universe="Marvel"]{background:radial-gradient(ellipse at 50% 35%,#9b4554,#542e42 47%,#271c30 95%)}
+.character-display[data-universe="The Witcher"]{background:radial-gradient(ellipse at 50% 35%,#6f7777,#3b5055 47%,#1c2b37 95%)}
+.character-display[data-universe="Jujutsu Kaisen"]{background:radial-gradient(ellipse at 50% 35%,#7c5488,#45335d 47%,#261c3c 95%)}
+.character-display[data-universe="Attack on Titan"]{background:radial-gradient(ellipse at 50% 35%,#7d6f52,#534b39 47%,#272b24 95%)}
+.character-display[data-universe="Bleach"]{background:radial-gradient(ellipse at 50% 35%,#6991a2,#395b6c 47%,#1c3240 95%)}
