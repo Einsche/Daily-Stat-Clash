@@ -1,227 +1,279 @@
+/* Daily Stat Clash — independent GitHub Pages client, Supabase GoTrue + RPC */
 (() => {
-  "use strict";
-  const cfg = window.DAILY_STAT_CONFIG || {};
-  const configured = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test((cfg.supabaseUrl || "").replace(/\/$/, "")) && /^[a-zA-Z0-9._-]{20,}$/.test(cfg.supabaseAnonKey || "");
-  const apiBase = (cfg.supabaseUrl || "").replace(/\/$/, "");
-  const S = [
-    {id:"strength",name:"Strength",code:"STR",hint:"Raw physical power"},
-    {id:"dexterity",name:"Dexterity",code:"DEX",hint:"Speed and precision"},
-    {id:"battle_iq",name:"Battle IQ",code:"BIQ",hint:"Tactics and strategy"},
-    {id:"endurance",name:"Endurance",code:"END",hint:"Durability and stamina"},
-    {id:"hacks",name:"Hacks",code:"HAX",hint:"Extraordinary abilities"},
-    {id:"iq",name:"IQ",code:"IQ",hint:"Intellect and reasoning"}
+  'use strict';
+  const config = window.DAILY_CLASH_CONFIG || {};
+  const ready = Boolean(config.supabaseUrl && config.supabaseAnonKey);
+  const apiBase = String(config.supabaseUrl || '').replace(/\/+$/, '');
+  const sessionKey = 'daily-stat-clash.supabase-session.v1';
+  const stats = [
+    ['strength','STR','Strength','Raw physical power'],['dexterity','DEX','Dexterity','Speed & precision'],
+    ['battle_iq','BIQ','Battle IQ','Tactical intelligence'],['endurance','END','Endurance','Durability & stamina'],
+    ['hacks','HAX','Hacks','Special abilities'],['iq','IQ','IQ','Reasoning & intellect']
   ];
   const $ = id => document.getElementById(id);
-  let session = loadSession();
-  let game = {user:null,picks:[],current:null,submitted:false,participants:0,totalCharacters:101,leaderboards:{weekly:[],monthly:[],alltime:[]},history:[]};
-  let boardPeriod = "weekly";
-  let authMode = "login";
+  let mode = 'login';
+  let state = null;
+  let session = null;
+  let period = 'weekly';
   let busy = false;
-  let toastTimer;
-  function el(tag, className, content) {
-    const node = document.createElement(tag);
-    if(className) node.className = className;
-    if(content != null) node.textContent = String(content);
-    return node;
+  let toastTimer = 0;
+  const pending = document.createElement('button');
+  pending.id = 'draw-character';
+  pending.className = 'btn btn-primary draw-action';
+  pending.type = 'button';
+  pending.textContent = 'DRAW CHARACTER ↗';
+  document.querySelector('.draw-panel .character-details').append(pending);
+
+  const getSession = () => {
+    try { const x = JSON.parse(localStorage.getItem(sessionKey) || 'null');
+      return x && typeof x.access_token==='string' && typeof x.refresh_token==='string' ? x : null; }
+    catch { return null; }
+  };
+  const setSession = x => {
+    session = x;
+    if (x) localStorage.setItem(sessionKey, JSON.stringify(x));
+    else localStorage.removeItem(sessionKey);
+  };
+  session = getSession();
+
+  function notify(message, error=false) {
+    const el = $('notification'); el.textContent = message;
+    el.classList.toggle('is-error', error); el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>{el.hidden=true;}, 5300);
   }
-  function loadSession() {
-    try {
-      const raw = JSON.parse(sessionStorage.getItem("dsc_session_v1") || "null");
-      if(!raw || !raw.access_token || !raw.refresh_token) return null;
-      return raw;
-    } catch {return null;}
+  function showError(e) { notify(e instanceof Error ? e.message : String(e),true); }
+  function shortDate(day) {
+    if (!day) return '—';
+    return new Date(day+'T12:00:00Z').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});
   }
-  function saveSession(data) {
-    session = data ? {access_token:data.access_token, refresh_token:data.refresh_token,expires_at:(data.expires_at || Math.floor(Date.now()/1000)+(data.expires_in||3600))} : null;
-    if(session) sessionStorage.setItem("dsc_session_v1", JSON.stringify(session));
-    else sessionStorage.removeItem("dsc_session_v1");
+  function imgFor(c) {
+    const path = c && c.portrait_url;
+    if (!path || !/^\/Daily-Stat-Clash\/app\/public\/assets\/portraits\/[a-z0-9-]+\.svg$/.test(path)) return '';
+    return path;
   }
-  function notify(message) {
-    const n=$("notification");n.textContent=message;n.hidden=false;
-    clearTimeout(toastTimer);toastTimer=setTimeout(()=>n.hidden=true,5500);
-  }
-  function asset(path) {return new URL(String(path||"").replace(/^\/+/, ""), document.baseURI).href;}
-  function todayIstanbul() {
-    const parts=Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
-    const m=Object.fromEntries(parts.filter(v=>v.type!=="literal").map(p=>[p.type,Number(p.value)]));
-    return {y:m.year,m:m.month,d:m.day,iso:[m.year,String(m.month).padStart(2,"0"),String(m.day).padStart(2,"0")].join("-")};
-  }
-  function tick() {
-    const t=todayIstanbul();
-    $("today-label").textContent=t.iso;
-    const next=Date.UTC(t.y,t.m-1,t.d+1,-3,0,0);
-    let seconds=Math.max(0,Math.floor((next-Date.now())/1000));
-    const hh=String(Math.floor(seconds/3600)).padStart(2,"0");seconds%=3600;
-    const mm=String(Math.floor(seconds/60)).padStart(2,"0");const ss=String(seconds%60).padStart(2,"0");
-    $("countdown").textContent=hh+" : "+mm+" : "+ss;
-  }
-  async function request(endpoint, body, useToken=true, retry=true) {
-    if(!configured) throw new Error("The account backend has not been connected yet. An administrator must configure Supabase.");
-    if(useToken && session && session.expires_at && session.expires_at < Math.floor(Date.now()/1000)+90) {
-      await refreshSession();
-    }
-    const headers={"apikey":cfg.supabaseAnonKey,"Content-Type":"application/json"};
-    if(useToken && session) headers.Authorization="Bearer "+session.access_token;
-    else headers.Authorization="Bearer "+cfg.supabaseAnonKey;
-    const r=await fetch(apiBase+endpoint,{method:"POST",headers,body:JSON.stringify(body||{}),cache:"no-store"});
-    let data;try {data=await r.json();}catch {data={};}
-    if(!r.ok) {
-      if(r.status===401 && retry && useToken && session) {
-        try {await refreshSession();return request(endpoint,body,useToken,false);}catch {logout(false);}
-      }
-      throw new Error(data.msg || data.error_description || data.message || data.error || "Unable to complete this request.");
-    }
+  async function authFetch(path,payload) {
+    const res=await fetch(apiBase+'/auth/v1/'+path,{method:'POST',headers:{
+      'Content-Type':'application/json','apikey':config.supabaseAnonKey,
+      ...(session?.access_token?{'Authorization':'Bearer '+session.access_token}:{})
+    },body:JSON.stringify(payload)});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok) throw Error(data.msg||data.error_description||data.message||data.error||'Authentication failed');
     return data;
   }
-  async function refreshSession(){
-    if(!session || !configured) throw new Error("Session expired. Please sign in.");
-    const r=await fetch(apiBase+"/auth/v1/token?grant_type=refresh_token",{
-      method:"POST",headers:{"apikey":cfg.supabaseAnonKey,"Content-Type":"application/json"},
-      body:JSON.stringify({refresh_token:session.refresh_token})
-    });
-    if(!r.ok) {saveSession(null);throw new Error("Your session expired. Please sign in again.");}
-    saveSession(await r.json());
-  }
-  async function rpc(name, body={}, useToken=true){return request("/rest/v1/rpc/"+name,body,useToken);}
-  async function reloadGame() {
-    if(!configured){render();return;}
-    try {
-      if(session){game=await rpc("game_state");}
-      else {
-        const [weekly,monthly,alltime]=await Promise.all(["weekly","monthly","alltime"].map(p=>rpc("leaderboard",{p_period:p},false)));
-        game={user:null,picks:[],current:null,submitted:false,totalCharacters:101,participants:0,leaderboards:{weekly,monthly,alltime},history:[]};
-      }
-      render();
-    } catch(e){render();notify(e.message);}
-  }
-  function render() {
-    const picks=Array.isArray(game.picks)?game.picks:[];
-    const signedIn=!!(session && game.user);
-    $("user-handle").hidden=!signedIn;
-    $("user-handle").textContent=signedIn?"@"+game.user.handle:"";
-    $("auth-toggle").textContent=signedIn?"SIGN OUT ↗":"SIGN IN ↗";
-    $("count-players").textContent=String(game.participants||0).padStart(2,"0");
-    $("count-characters").textContent=game.totalCharacters || 101;
-    $("progress-count").innerHTML="";
-    $("progress-count").append(document.createTextNode(String(picks.length).padStart(2,"0")+" "));
-    $("progress-count").append(el("span","", "/ 6"));
-    $("progress-fill").style.width=(100*picks.length/6)+"%";
-    const statGrid=$("stat-grid");statGrid.replaceChildren();
-    for(const stat of S){
-      const pick=picks.find(p=>p.stat===stat.id);
-      const slot=el("button","stat-slot"+(pick?" filled":signedIn && game.current && !game.submitted?" available":""));
-      slot.type="button";slot.disabled=!!pick || !signedIn || !game.current || !!game.submitted || busy;
-      slot.setAttribute("aria-label",pick ? stat.name+" assigned to "+pick.name : "Assign current character to "+stat.name);
-      const left=el("div","slot-person");
-      if(pick && pick.portrait_url){const img=el("img");img.src=asset(pick.portrait_url);img.alt="";img.loading="lazy";left.append(img);}
-      const info=el("div","slot-person-name");
-      info.append(el("strong","",stat.name),el("small","",pick?pick.name:stat.hint));
-      left.append(info);
-      slot.append(left,el("span","stat-code",pick?"✓":stat.code));
-      if(!pick) slot.addEventListener("click",()=>choose(stat.id));
-      statGrid.append(slot);
-    }
-    const current=game.current;
-    const img=$("current-portrait");
-    img.hidden=!current;
-    $("portrait-fallback").hidden=!!current;
-    if(current){img.src=asset(current.portrait_url);img.alt="Portrait of "+current.name;}
-    else {img.removeAttribute("src");img.alt="";}
-    $("current-world").textContent=current ? current.universe : game.submitted?"LINEUP LOCKED":signedIn?"ALL DRAWS COMPLETE":"THE ARENA AWAITS";
-    $("current-name").textContent=current ? current.name : game.submitted?"Ready for battle.":signedIn&&picks.length===6?"All six assigned.":"A fighter is waiting.";
-    $("draw-description").textContent=current ? "Choose a stat slot for this character. The value remains hidden until midnight." : game.submitted?"Your lineup is submitted. Come back for the results after midnight Istanbul time.":signedIn?"Your next challenge is ready as soon as you start.":"Sign in to reveal your next character and build your lineup.";
-    $("draw-number").textContent=game.submitted?"SUBMITTED": "DRAW "+String(Math.min(6,picks.length+1)).padStart(2,"0")+" / 06";
-    $("draw-note").textContent=game.submitted?"AWAITING THE NEXT MATCHUP":"STATS HIDDEN UNTIL REVEAL";
-    const submit=$("submit-lineup");submit.disabled=!signedIn||picks.length!==6||!!game.submitted||busy;
-    submit.textContent=game.submitted?"LINEUP LOCKED ✓":"SUBMIT LINEUP ↗";
-    $("lineup-status").textContent=!configured?"Awaiting server connection. Configure Supabase to activate accounts.":!signedIn?"Sign in to begin today's challenge.":game.submitted?"Your picks are final for today.":picks.length<6?String(6-picks.length)+" more fighter"+(6-picks.length===1?"":"s")+" to assign.":"Your lineup is ready to submit.";
-    renderLeaderboard();renderHistory();
-  }
-  function renderLeaderboard() {
-    const root=$("leaderboard-rows");root.replaceChildren();
-    const rows=(game.leaderboards||{})[boardPeriod]||[];
-    if(!rows.length){root.append(el("div","empty-state",configured?"No ranked players yet. Be the first to enter the arena.":"Rankings appear once the backend is connected."));return;}
-    rows.forEach((p,i)=>{
-      const row=el("div","board-row");
-      const player=el("div","board-player");player.append(el("span","board-rank",String(i+1).padStart(2,"0")),el("span","board-avatar",p.handle.slice(0,1).toUpperCase()),el("span","board-player-name",p.handle));
-      row.append(player,el("span","",p.matches||0),el("span","board-score",p.score||0));
-      root.append(row);
-    });
-  }
-  function renderHistory() {
-    const root=$("history-list");root.replaceChildren();
-    if(!game.history?.length){root.append(el("div","empty-state",!session?"Sign in to view your match history.":"Your past matchups will appear here after the daily settlement."));return;}
-    game.history.forEach(h=>{
-      const div=el("div","history-entry");div.append(el("span","history-date",h.day));
-      const player=el("div","history-opponent","VS "+(h.opponent_handle||"UNKNOWN"));
-      player.append(el("small","",h.is_bye?"No opponent":h.your_score>h.opponent_score?"VICTORY":h.your_score<h.opponent_score?"DEFEAT":"DRAW"));
-      div.append(player,el("span","history-result "+(h.your_score>h.opponent_score?"win":h.your_score<h.opponent_score?"lose":""),(h.your_score||0)+" : "+(h.opponent_score||0)));
-      root.append(div);
-    });
-  }
-  async function choose(stat) {
-    if(busy||!game.current||game.submitted)return;busy=true;render();
-    try{game=await rpc("assign_stat",{p_stat:stat});}
-    catch(e){notify(e.message);}
-    finally{busy=false;render();}
-  }
-  async function submit() {
-    if(busy||game.picks.length!==6)return;
-    busy=true;render();
-    try{game=await rpc("submit_lineup");notify("Lineup locked. Your daily challenge has been submitted!");}
-    catch(e){notify(e.message);}
-    finally{busy=false;render();}
-  }
-  function showAuth() {
-    if(!configured) {notify("Account registration needs the Supabase project connection. The GitHub Pages interface is ready.");return;}
-    setAuthMode("login");$("auth-dialog").showModal();
-  }
-  function setAuthMode(mode) {
-    authMode=mode;$("auth-title").textContent=mode==="login"?"Welcome back.":"Join the contenders.";
-    $("auth-hint").textContent=mode==="login"?"Sign in to save your picks and challenge other players.":"Create your player account. Your scores and match history will be saved permanently.";
-    $("signup-handle-wrap").hidden=mode!=="register";
-    $("auth-password").autocomplete=mode==="login"?"current-password":"new-password";
-    $("auth-submit").textContent=mode==="login"?"SIGN IN ↗":"CREATE ACCOUNT ↗";
-    $("auth-switch-prefix").textContent=mode==="login"?"New to the arena?":"Already competing?";
-    $("auth-switch").textContent=mode==="login"?"Create an account":"Sign in";
-    $("auth-error").hidden=true;
-  }
-  async function onAuth(e) {
-    e.preventDefault();if(busy)return;
-    const email=$("auth-email").value.trim().toLowerCase();
-    const password=$("auth-password").value;
-    const handle=$("signup-handle").value.trim();
-    const err=$("auth-error");err.hidden=true;
-    if(!email||!email.includes("@")){err.textContent="Enter a valid email address.";err.hidden=false;return;}
-    if(password.length<8){err.textContent="Password must be at least 8 characters.";err.hidden=false;return;}
-    if(authMode==="register" && !/^[A-Za-z0-9_]{3,22}$/.test(handle)){err.textContent="Player name must be 3–22 characters using letters, numbers or underscore.";err.hidden=false;return;}
-    busy=true;$("auth-submit").disabled=true;
+  async function refresh() {
+    if(!session?.refresh_token)return false;
     try{
-      if(authMode==="register"){
-        const d=await request("/auth/v1/signup",{email,password,data:{handle}},false);
-        if(d.access_token && d.refresh_token){saveSession(d);$("auth-dialog").close();await reloadGame();notify("Account created. Welcome to the arena.");}
-        else{setAuthMode("login");notify("Account created. Check your email for a confirmation link before signing in.");}
-      }else{
-        const d=await request("/auth/v1/token?grant_type=password",{email,password},false);
-        if(!d.access_token)throw new Error("Sign-in did not return a session.");
-        saveSession(d);$("auth-dialog").close();await reloadGame();notify("Signed in successfully.");
-      }
-    }catch(ex){err.textContent=ex.message;err.hidden=false;}
-    finally{busy=false;$("auth-submit").disabled=false;}
+      const data=await authFetch('token?grant_type=refresh_token',{refresh_token:session.refresh_token});
+      setSession(data); return true;
+    } catch {setSession(null);return false;}
   }
-  function logout(message=true){saveSession(null);game={...game,user:null,picks:[],current:null,submitted:false,history:[]};render();reloadGame();if(message)notify("Signed out.");}
-  document.querySelectorAll(".board-tab").forEach(btn=>btn.addEventListener("click",()=>{
-    boardPeriod=btn.dataset.period;document.querySelectorAll(".board-tab").forEach(b=>b.classList.toggle("active",b===btn));renderLeaderboard();
+  async function rpc(name,body={},retry=true) {
+    if(!ready) throw Error('Backend not connected. Configure Supabase URL and publishable key in web/config.js.');
+    const request=()=>fetch(apiBase+'/rest/v1/rpc/'+name,{method:'POST',headers:{
+      'Content-Type':'application/json','apikey':config.supabaseAnonKey,
+      'Authorization':'Bearer '+(session?.access_token||config.supabaseAnonKey)
+    },body:JSON.stringify(body)});
+    let res=await request();
+    if(res.status===401 && retry && await refresh()) res=await request();
+    const data=await res.json().catch(()=>null);
+    if(!res.ok) throw Error(data?.message||data?.error||'Server request failed ('+res.status+')');
+    return data;
+  }
+  function el(tag,cls,txt) {
+    const n=document.createElement(tag);
+    if(cls)n.className=cls;
+    if(txt!==undefined)n.textContent=String(txt);
+    return n;
+  }
+  function updateAuthUi() {
+    const logged=Boolean(session && state?.user);
+    $('user-handle').hidden=!logged;
+    $('user-handle').textContent=logged?'@'+state.user.handle:'';
+    $('auth-toggle').innerHTML=logged?'SIGN OUT <span>↗</span>':'SIGN IN <span>↗</span>';
+  }
+  function redraw() {
+    updateAuthUi();
+    const choices=state?.picks||[];
+    const current=state?.current||null;
+    const submitted=Boolean(state?.submitted);
+    $('count-characters').textContent=state?.totalCharacters??101;
+    $('count-players').textContent=state?.participants??'—';
+    $('today-label').textContent=state?.day?shortDate(state.day).toUpperCase():'ISTANBUL TIME';
+    $('progress-count').innerHTML=choices.length+' <span>/ 6</span>';
+    $('progress-fill').style.width=(choices.length/6*100)+'%';
+    const grid=$('stat-grid'); grid.replaceChildren();
+    for(const [id,abbr,label,description] of stats) {
+      const chosen=choices.find(p=>p.stat===id);
+      const slot=el('button','stat-slot'+(chosen?' filled':'')+(submitted?' locked':''));slot.type='button';
+      slot.disabled=Boolean(chosen||submitted||busy||!session);
+      const symbol=el('span','slot-symbol',abbr);
+      const content=el('span','slot-content');
+      content.append(el('strong','',label),el('small','',chosen?chosen.name:description));
+      slot.append(symbol,content);
+      if(chosen) {
+        const portrait=imgFor(chosen);
+        if(portrait){const im=el('img','slot-portrait');im.src=portrait;im.alt='';slot.append(im);}
+        slot.append(el('span','slot-tick','✓'));
+      } else slot.append(el('span','slot-plus',current?'+':'○'));
+      slot.addEventListener('click',()=>assign(id));
+      grid.append(slot);
+    }
+    $('current-name').textContent=current?.name||(submitted?'Lineup locked.':choices.length===6?'Ready to submit.':'A fighter is waiting.');
+    $('current-world').textContent=current?.universe||(submitted?'TODAY IS COMPLETE':'THE ARENA AWAITS');
+    $('draw-description').textContent=current?'Choose one unused stat for this character. This choice cannot be undone.':
+      submitted?'Results will appear after the daily settlement at midnight.':
+      !session?'Sign in to reveal your next fighter.':choices.length===6?'Your six stat slots are filled. Submit your lineup.':
+      'Reveal your next randomly selected character.';
+    const portrait=$('current-portrait');
+    const src=imgFor(current);
+    if(src){portrait.src=src;portrait.alt=current.name;portrait.hidden=false;$('portrait-fallback').hidden=true;}
+    else{portrait.removeAttribute('src');portrait.hidden=true;$('portrait-fallback').hidden=false;}
+    $('draw-number').textContent='DRAW '+String(Math.min(choices.length+1,6)).padStart(2,'0')+' / 06';
+    $('draw-character').hidden=Boolean(current||submitted||choices.length===6);
+    $('draw-character').disabled=busy||!session||!ready;
+    $('draw-character').textContent=!session?'SIGN IN TO DRAW ↗':'DRAW CHARACTER ↗';
+    $('draw-note').textContent=submitted?'LINEUP SUBMITTED':current?'CHOOSE A STAT TO CONTINUE':'STATS HIDDEN UNTIL MATCHUP';
+    $('lineup-status').textContent=submitted?'Your lineup is submitted and locked.':
+      !session?'Sign in to begin today’s challenge.':current?'Assign the drawn character to an available stat.':
+      choices.length===6?'All six slots are assigned. Submit your lineup.':
+      'Draw '+(6-choices.length)+' more character'+(choices.length===5?'':'s')+'.';
+    $('submit-lineup').disabled=busy||submitted||choices.length!==6||!ready;
+    drawHistory();
+  }
+  function drawHistory() {
+    const holder=$('history-list');holder.replaceChildren();
+    if(!session) {holder.append(el('div','empty-state','Sign in to view your results and past opponents.'));return;}
+    const records=state?.history||[];
+    if(!records.length) {holder.append(el('div','empty-state','No settled matches yet. Submit today’s lineup and check back after midnight.'));return;}
+    for(const h of records) {
+      const row=el('div','history-row');
+      row.append(el('span','history-day',shortDate(h.day)));
+      row.append(el('strong','history-rival','vs '+h.opponent));
+      row.append(el('span','history-score',h.self_points+' — '+h.opponent_points));
+      const outcome=h.self_points>h.opponent_points?'WIN':h.self_points<h.opponent_points?'LOSS':'DRAW';
+      row.append(el('span','history-outcome '+outcome.toLowerCase(),outcome));
+      const toggle=el('button','history-detail-button','DETAILS ▾');
+      const detail=el('div','history-breakdown');
+      detail.hidden=true;
+      const by=stats.map(x=>x[0]);
+      for(const d of h.details||[]) {
+        const left=h.reversed?d.b:d.a,right=h.reversed?d.a:d.b;
+        detail.append(el('span','',stats[by.indexOf(d.stat)]?.[2]||d.stat),
+          el('span','',String(left)+' — '+String(right)));
+      }
+      toggle.onclick=()=>{detail.hidden=!detail.hidden;};
+      row.append(toggle,detail);
+      holder.append(row);
+    }
+  }
+  async function drawBoard() {
+    const holder=$('leaderboard-rows');
+    holder.replaceChildren(el('div','empty-state',ready?'Loading rankings…':'Leaderboard will appear when the backend is connected.'));
+    if(!ready)return;
+    try{
+      const leaders=await rpc('game_leaderboard',{p_period:period});
+      if(!Array.isArray(leaders)||!leaders.length){holder.replaceChildren(el('div','empty-state','Be the first challenger.'));return;}
+      holder.replaceChildren();
+      for(const person of leaders) {
+        const row=el('div','leaderboard-row');
+        const player=el('span','board-player');player.append(el('span','board-rank','#'+person.rank),el('strong','',person.handle));
+        row.append(player,el('span','board-matches',person.matches),el('strong','board-score',person.score));
+        holder.append(row);
+      }
+    }catch(e){holder.replaceChildren(el('div','empty-state',e.message||'Leaderboard unavailable.'));}
+  }
+  async function loadState() {
+    if(!ready){redraw();drawBoard();notify('Supabase backend must be connected before accounts can be created.',true);return;}
+    try{
+      state=await rpc('game_state');
+      redraw();await drawBoard();
+    }catch(e){showError(e);redraw();}
+  }
+  async function action(name,args={}) {
+    if(busy)return;
+    busy=true;redraw();
+    try{state=await rpc(name,args);if(name==='game_draw') {
+      state=await rpc('game_state');
+    }notify(name==='game_submit'?'Lineup submitted successfully.':'Choice saved.');}
+    catch(e){showError(e);}
+    finally{busy=false;redraw();}
+  }
+  function assign(stat) {
+    if(!session){openAuth('login');return;}
+    if(!state?.current){notify('Draw a character first.',true);return;}
+    action('game_assign',{p_stat:stat});
+  }
+  function openAuth(kind) {
+    mode=kind||'login';authMode();
+    const dialog=$('auth-dialog');
+    if(!dialog.open)dialog.showModal();
+  }
+  function authMode() {
+    const signup=mode==='register';
+    $('auth-title').textContent=signup?'Join the arena.':'Welcome back.';
+    $('auth-hint').textContent=signup?'Create an account to compete every day.':'Sign in to save picks and face other challengers.';
+    $('signup-handle-wrap').hidden=!signup;
+    $('signup-handle').required=signup;
+    $('auth-password').autocomplete=signup?'new-password':'current-password';
+    $('auth-submit').textContent=signup?'CREATE ACCOUNT ↗':'SIGN IN ↗';
+    $('auth-switch-prefix').textContent=signup?'Already have an account?':'New to the arena?';
+    $('auth-switch').textContent=signup?'Sign in':'Create an account';
+    $('auth-error').hidden=true;
+  }
+  async function submitAuth(event) {
+    event.preventDefault();
+    if(!ready){$('auth-error').textContent='Connect a Supabase project in web/config.js to activate registration and login.';$('auth-error').hidden=false;return;}
+    const email=$('auth-email').value.trim();
+    const password=$('auth-password').value;
+    const handle=$('signup-handle').value.trim();
+    if(password.length<8){$('auth-error').textContent='Password must have at least eight characters.';$('auth-error').hidden=false;return;}
+    if(mode==='register'&&!/^[a-zA-Z0-9_-]{3,22}$/.test(handle)){$('auth-error').textContent='Player name must be 3–22 letters, numbers, _ or -.';$('auth-error').hidden=false;return;}
+    $('auth-submit').disabled=true;
+    try{
+      const payload=mode==='register'?{email,password,data:{handle}}:{email,password};
+      const data=await authFetch(mode==='register'?'signup':'token?grant_type=password',payload);
+      if(data.access_token){
+        setSession(data);
+        $('auth-dialog').close();notify('Signed in successfully.');await loadState();
+      }else {
+        $('auth-dialog').close();notify('Account created. Check your email for a confirmation link before signing in.');
+      }
+    }catch(e){$('auth-error').textContent=e.message;$('auth-error').hidden=false;}
+    finally{$('auth-submit').disabled=false;}
+  }
+  async function signOut() {
+    if(session&&ready){try{await authFetch('logout',{});}catch{/* Local sign-out still completes */}}
+    setSession(null);state=null;redraw();await loadState();notify('Signed out.');
+  }
+  function tickCountdown(){
+    const now=new Date();
+    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
+    const obj=Object.fromEntries(parts.map(x=>[x.type,x.value]));
+    const midnight=Date.parse(obj.year+'-'+obj.month+'-'+obj.day+'T21:00:00Z');
+    let seconds=Math.max(0,Math.floor((midnight-Date.now())/1000));
+    const h=Math.floor(seconds/3600);seconds%=3600;
+    const m=Math.floor(seconds/60);const s=seconds%60;
+    $('countdown').textContent=[h,m,s].map(x=>String(x).padStart(2,'0')).join(' : ');
+  }
+  $('auth-toggle').addEventListener('click',()=>session?signOut():openAuth('login'));
+  $('auth-switch').addEventListener('click',()=>{mode=mode==='login'?'register':'login';authMode();});
+  $('close-auth').addEventListener('click',()=>$('auth-dialog').close());
+  $('auth-form').addEventListener('submit',submitAuth);
+  $('auth-dialog').addEventListener('click',e=>{if(e.target===$('auth-dialog'))$('auth-dialog').close();});
+  $('draw-character').addEventListener('click',()=>session?action('game_draw'):openAuth('login'));
+  $('submit-lineup').addEventListener('click',()=>{$('confirm-backdrop').hidden=false;});
+  $('confirm-cancel').addEventListener('click',()=>{$('confirm-backdrop').hidden=true;});
+  $('confirm-submit').addEventListener('click',()=>{$('confirm-backdrop').hidden=true;action('game_submit');});
+  document.querySelectorAll('.board-tab').forEach(btn=>btn.addEventListener('click',()=>{
+    period=btn.dataset.period;document.querySelectorAll('.board-tab').forEach(t=>t.classList.toggle('active',t===btn));drawBoard();
   }));
-  $("auth-toggle").addEventListener("click",()=>session?logout():showAuth());
-  $("close-auth").addEventListener("click",()=>$("auth-dialog").close());
-  $("auth-switch").addEventListener("click",()=>setAuthMode(authMode==="login"?"register":"login"));
-  $("auth-form").addEventListener("submit",onAuth);
-  $("submit-lineup").addEventListener("click",()=>$("confirm-backdrop").hidden=false);
-  $("confirm-cancel").addEventListener("click",()=>$("confirm-backdrop").hidden=true);
-  $("confirm-submit").addEventListener("click",()=>{$("confirm-backdrop").hidden=true;submit();});
-  $("confirm-backdrop").addEventListener("click",e=>{if(e.target===$("confirm-backdrop"))$("confirm-backdrop").hidden=true;});
-  tick();setInterval(tick,1000);
-  if(session && !configured)saveSession(null);
-  render();reloadGame();
+  tickCountdown();setInterval(tickCountdown,1000);
+  const localDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  let trackedDay=localDay();
+  setInterval(()=>{const next=localDay();if(next!==trackedDay){trackedDay=next;loadState();}},15000);
+  (async()=>{
+    if(session)await refresh();
+    await loadState();
+  })();
 })();

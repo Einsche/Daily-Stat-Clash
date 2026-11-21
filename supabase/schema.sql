@@ -1,326 +1,280 @@
--- Daily Stat Clash / Supabase Postgres
--- Apply once to a Supabase project using its SQL editor or management connector.
--- Important: not deployed until a Supabase project is connected.
-create table if not exists public.profiles (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  handle text not null unique check(length(handle) between 3 and 24),
-  created_at timestamptz not null default now()
-);
+-- Daily Stat Clash / Supabase PostgreSQL backend
+-- Apply in Supabase SQL Editor, then run seed.sql and optionally schedule.sql.
+-- Public clients never receive character stat values until a settled match.
+create extension if not exists pgcrypto;
+create schema if not exists game_private;
+revoke all on schema game_private from public, anon, authenticated;
 
-create table if not exists public.characters (
+create table if not exists public.game_characters (
   id text primary key,
   name text not null,
   universe text not null,
-  portrait_url text not null,
-  strength smallint not null check (strength between 0 and 100),
-  dexterity smallint not null check (dexterity between 0 and 100),
-  battle_iq smallint not null check (battle_iq between 0 and 100),
-  endurance smallint not null check (endurance between 0 and 100),
-  hacks smallint not null check (hacks between 0 and 100),
-  iq smallint not null check (iq between 0 and 100)
+  portrait_url text not null
 );
-
-create table if not exists public.daily_runs (
-  user_id uuid not null references public.profiles(user_id) on delete cascade,
+create table if not exists game_private.character_stats (
+  id text primary key references public.game_characters(id) on delete cascade,
+  strength int not null check(strength between 0 and 100),
+  dexterity int not null check(dexterity between 0 and 100),
+  battle_iq int not null check(battle_iq between 0 and 100),
+  endurance int not null check(endurance between 0 and 100),
+  hacks int not null check(hacks between 0 and 100),
+  iq int not null check(iq between 0 and 100)
+);
+create table if not exists public.game_profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  handle text not null unique check(length(handle) between 3 and 25),
+  created_at timestamptz not null default now()
+);
+create table if not exists public.game_entries (
+  user_id uuid not null references auth.users(id) on delete cascade,
   day date not null,
-  current_character_id text references public.characters(id),
+  current_character text references public.game_characters(id),
   submitted_at timestamptz,
-  primary key (user_id, day)
+  primary key(user_id,day)
 );
-
-create table if not exists public.daily_picks (
+create table if not exists public.game_picks (
   user_id uuid not null,
   day date not null,
   stat text not null check(stat in ('strength','dexterity','battle_iq','endurance','hacks','iq')),
-  character_id text not null references public.characters(id),
-  picked_at timestamptz not null default now(),
-  primary key (user_id, day, stat),
-  unique(user_id, day, character_id),
-  foreign key(user_id, day) references public.daily_runs(user_id, day) on delete cascade
+  character_id text not null references public.game_characters(id),
+  primary key(user_id,day,stat),
+  unique(user_id,day,character_id),
+  foreign key(user_id,day) references public.game_entries(user_id,day) on delete cascade
 );
-
-create table if not exists public.matchups (
-  id bigint generated always as identity primary key,
+create table if not exists public.game_duels (
+  id uuid primary key default gen_random_uuid(),
   day date not null,
-  user_a uuid not null references public.profiles(user_id) on delete cascade,
-  user_b uuid not null references public.profiles(user_id) on delete cascade,
-  a_score smallint not null check(a_score between 0 and 6),
-  b_score smallint not null check(b_score between 0 and 6),
-  breakdown jsonb not null,
+  player_a uuid not null references auth.users(id),
+  player_b uuid not null references auth.users(id),
+  points_a int not null,
+  points_b int not null,
+  details jsonb not null,
   created_at timestamptz not null default now(),
-  constraint distinct_opponents check (user_a <> user_b),
-  constraint unique_user_a_per_day unique(day, user_a),
-  constraint unique_user_b_per_day unique(day, user_b)
+  unique(day,player_a),
+  unique(day,player_b),
+  check(player_a<>player_b)
 );
-create index if not exists idx_matchups_a on public.matchups(user_a,day desc);
-create index if not exists idx_matchups_b on public.matchups(user_b,day desc);
-
-create table if not exists public.settled_days (
+create table if not exists public.game_settled_days (
   day date primary key,
   settled_at timestamptz not null default now()
 );
+create index if not exists game_duels_day_idx on public.game_duels(day desc);
+create index if not exists game_entries_day_idx on public.game_entries(day,submitted_at);
 
--- Do not allow browser clients to read hidden stats, change picks or fabricate scores.
-alter table public.profiles enable row level security;
-alter table public.characters enable row level security;
-alter table public.daily_runs enable row level security;
-alter table public.daily_picks enable row level security;
-alter table public.matchups enable row level security;
-alter table public.settled_days enable row level security;
-revoke all on public.profiles, public.characters, public.daily_runs, public.daily_picks, public.matchups, public.settled_days from anon, authenticated;
+-- Explicit RLS and grants: clients can read profiles and public character identities,
+-- but all game state mutations and secret values are server-side RPC only.
+alter table public.game_characters enable row level security;
+alter table public.game_profiles enable row level security;
+alter table public.game_entries enable row level security;
+alter table public.game_picks enable row level security;
+alter table public.game_duels enable row level security;
+alter table public.game_settled_days enable row level security;
+alter table game_private.character_stats enable row level security;
 
--- Profiles are created by Supabase Auth, never directly by the browser.
-create or replace function public.create_player_profile()
-returns trigger language plpgsql security definer set search_path=public,pg_temp
-as $$
-declare v_handle text;
+drop policy if exists game_characters_read on public.game_characters;
+create policy game_characters_read on public.game_characters for select to anon,authenticated using(true);
+drop policy if exists game_profiles_read on public.game_profiles;
+create policy game_profiles_read on public.game_profiles for select to anon,authenticated using(true);
+grant usage on schema public to anon,authenticated;
+grant select on public.game_characters,public.game_profiles to anon,authenticated;
+revoke all on public.game_entries,public.game_picks,public.game_duels,public.game_settled_days from anon,authenticated;
+revoke all on game_private.character_stats from anon,authenticated;
+
+create or replace function public.game_profile_signup()
+returns trigger language plpgsql security definer set search_path='' as $$
+declare candidate text;
 begin
-  v_handle := regexp_replace(coalesce(new.raw_user_meta_data->>'handle','player'), '[^A-Za-z0-9_]', '', 'g');
-  if length(v_handle) < 3 then v_handle := 'player'; end if;
-  v_handle := left(v_handle, 16) || '_' || left(replace(new.id::text,'-',''),5);
-  insert into public.profiles(user_id, handle) values (new.id, v_handle)
-    on conflict (user_id) do nothing;
-  return new;
-end;
-$$;
-drop trigger if exists on_auth_user_created_dsc on auth.users;
-create trigger on_auth_user_created_dsc after insert on auth.users
-for each row execute procedure public.create_player_profile();
-
--- Public leaderboard: metadata and earned points only, no secret character values.
-create or replace function public.leaderboard(p_period text default 'weekly')
-returns jsonb language plpgsql stable security definer set search_path=public,pg_temp
-as $$
-declare v_today date := (now() at time zone 'Europe/Istanbul')::date;
-declare v_from date;
-declare v_out jsonb;
-begin
-  if p_period not in ('weekly','monthly','alltime') then
-    raise exception 'Invalid leaderboard period';
-  end if;
-  v_from := case p_period
-    when 'weekly' then v_today - (extract(isodow from v_today)::int - 1)
-    when 'monthly' then date_trunc('month',v_today::timestamp)::date
-    else date '2000-01-01'
-  end;
-  select coalesce(jsonb_agg(jsonb_build_object('handle',q.handle,'score',q.score,'matches',q.matches)
-     order by q.score desc,q.matches desc,q.handle asc),'[]'::jsonb)
-  into v_out
-  from (
-    select p.handle,coalesce(sum(pts.score),0)::integer as score,
-      count(pts.day)::integer as matches
-    from public.profiles p
-    left join (
-       select user_a as user_id,day,a_score as score from public.matchups
-       union all select user_b as user_id,day,b_score as score from public.matchups
-    ) pts on pts.user_id=p.user_id and pts.day>=v_from
-    group by p.user_id,p.handle
-    order by score desc,matches desc,p.handle asc
-    limit 100
-  ) q;
-  return v_out;
-end;
-$$;
-
--- Creates one draw for the current account, protected by a row lock.
-create or replace function public.game_state()
-returns jsonb language plpgsql volatile security definer set search_path=public,pg_temp
-as $$
-declare v_user uuid := auth.uid();
-declare v_day date := (now() at time zone 'Europe/Istanbul')::date;
-declare v_run public.daily_runs%rowtype;
-declare v_current text;
-declare v_pick_count integer;
-declare v_state jsonb;
-begin
-  if v_user is null then raise exception 'Sign in to play'; end if;
-  -- Backfill profile on older existing accounts if the trigger was added later.
-  insert into public.profiles(user_id,handle) values
-    (v_user, 'player_' || left(replace(v_user::text,'-',''),8))
+  candidate := regexp_replace(coalesce(new.raw_user_meta_data->>'handle',''), '[^a-zA-Z0-9_-]', '', 'g');
+  if length(candidate)<3 then candidate := 'Player'; end if;
+  candidate := left(candidate,18)||'-'||left(new.id::text,6);
+  insert into public.game_profiles(user_id,handle) values(new.id,candidate)
   on conflict(user_id) do nothing;
-  insert into public.daily_runs(user_id,day) values(v_user,v_day)
-    on conflict(user_id,day) do nothing;
-  select * into v_run from public.daily_runs
-   where user_id=v_user and day=v_day for update;
-  select count(*) into v_pick_count from public.daily_picks
-   where user_id=v_user and day=v_day;
-  if v_run.submitted_at is null and v_run.current_character_id is null and v_pick_count<6 then
-    select c.id into v_current from public.characters c where not exists(
-      select 1 from public.daily_picks dp
-       where dp.user_id=v_user and dp.day=v_day and dp.character_id=c.id
-    ) order by random() limit 1;
-    if v_current is not null then
-      update public.daily_runs set current_character_id=v_current
-       where user_id=v_user and day=v_day;
-      v_run.current_character_id:=v_current;
-    end if;
-  end if;
-  select jsonb_build_object(
-    'day',v_day,
-    'user',(select jsonb_build_object('id',user_id,'handle',handle) from public.profiles where user_id=v_user),
-    'participants',(select count(*) from public.profiles),
-    'totalCharacters',(select count(*) from public.characters),
-    'submitted',v_run.submitted_at is not null,
-    'current',(select jsonb_build_object('id',id,'name',name,'universe',universe,'portrait_url',portrait_url)
-       from public.characters where id=v_run.current_character_id),
-    'picks',coalesce((select jsonb_agg(jsonb_build_object(
-        'character_id',dp.character_id,'stat',dp.stat,'name',c.name,'universe',c.universe,'portrait_url',c.portrait_url
-       ) order by dp.picked_at)
-       from public.daily_picks dp join public.characters c on c.id=dp.character_id
-       where dp.user_id=v_user and dp.day=v_day),'[]'::jsonb),
-    'leaderboards',jsonb_build_object('weekly',public.leaderboard('weekly'),
-      'monthly',public.leaderboard('monthly'),'alltime',public.leaderboard('alltime')),
-    'history',coalesce((
-      select jsonb_agg(jsonb_build_object(
-        'day',m.day,'opponent_handle',opp.handle,
-        'your_score',case when m.user_a=v_user then m.a_score else m.b_score end,
-        'opponent_score',case when m.user_a=v_user then m.b_score else m.a_score end,
-        'breakdown',m.breakdown
-      ) order by m.day desc)
-      from public.matchups m
-      join public.profiles opp on opp.user_id=case when m.user_a=v_user then m.user_b else m.user_a end
-      where m.user_a=v_user or m.user_b=v_user
-    ),'[]'::jsonb)
-   ) into v_state;
-  return v_state;
-end;
-$$;
+  return new;
+end; $$;
+drop trigger if exists game_profile_signup_trigger on auth.users;
+create trigger game_profile_signup_trigger after insert on auth.users
+for each row execute function public.game_profile_signup();
 
-create or replace function public.assign_stat(p_stat text)
-returns jsonb language plpgsql volatile security definer set search_path=public,pg_temp
-as $$
-declare v_user uuid := auth.uid();
-declare v_day date := (now() at time zone 'Europe/Istanbul')::date;
-declare v_run public.daily_runs%rowtype;
-declare v_count integer;
-begin
-  if v_user is null then raise exception 'Sign in to play'; end if;
-  if p_stat not in ('strength','dexterity','battle_iq','endurance','hacks','iq') then
-    raise exception 'Invalid stat';
-  end if;
-  perform public.game_state();
-  select * into v_run from public.daily_runs
-    where user_id=v_user and day=v_day for update;
-  if v_run.submitted_at is not null then raise exception 'Today''s lineup is locked'; end if;
-  if v_run.current_character_id is null then raise exception 'No character available'; end if;
-  select count(*) into v_count from public.daily_picks
-    where user_id=v_user and day=v_day;
-  if v_count>=6 then raise exception 'All six picks are already assigned'; end if;
-  if exists(select 1 from public.daily_picks where user_id=v_user and day=v_day and stat=p_stat) then
-    raise exception 'You already assigned this stat';
-  end if;
-  insert into public.daily_picks(user_id,day,stat,character_id)
-    values(v_user,v_day,p_stat,v_run.current_character_id);
-  update public.daily_runs set current_character_id=null
-    where user_id=v_user and day=v_day;
-  return public.game_state();
-end;
-$$;
+create or replace function public.game_today()
+returns date language sql stable set search_path='' as $$
+select (now() at time zone 'Europe/Istanbul')::date; $$;
 
-create or replace function public.submit_lineup()
-returns jsonb language plpgsql volatile security definer set search_path=public,pg_temp
-as $$
-declare v_user uuid := auth.uid();
-declare v_day date := (now() at time zone 'Europe/Istanbul')::date;
-declare v_count integer;
-declare v_submitted timestamptz;
+-- Runs once per Istanbul day, even if cron fails (get_state will reconcile yesterday).
+create or replace function public.game_settle_day(target_day date)
+returns void language plpgsql security definer set search_path='' as $$
+declare
+  pair record;
+  slot text;
+  char_a text;
+  char_b text;
+  value_a int;
+  value_b int;
+  total_a int;
+  total_b int;
+  outcomes jsonb;
 begin
-  if v_user is null then raise exception 'Sign in to play'; end if;
-  perform public.game_state();
-  select submitted_at into v_submitted from public.daily_runs
-    where user_id=v_user and day=v_day for update;
-  if v_submitted is not null then raise exception 'Today''s lineup was already submitted'; end if;
-  select count(*) into v_count from public.daily_picks where user_id=v_user and day=v_day;
-  if v_count<>6 then raise exception 'You must choose all six stats before submitting'; end if;
-  update public.daily_runs set submitted_at=now(),current_character_id=null
-    where user_id=v_user and day=v_day;
-  return public.game_state();
-end;
-$$;
-
--- Idempotent midnight reconciliation. Only submitted six-pick lineups play.
--- Consecutive pairs are selected by a fixed per-day hash of UUIDs; an odd
--- participant gets a bye (no points) and may play on future days.
-create or replace function public.settle_day(p_day date)
-returns integer language plpgsql volatile security definer set search_path=public,pg_temp
-as $$
-declare v_user uuid;
-declare v_pending uuid := null;
-declare v_a integer;
-declare v_b integer;
-declare v_a_score integer;
-declare v_b_score integer;
-declare v_stat text;
-declare v_breakdown jsonb;
-declare v_matches integer := 0;
-declare v_rows integer;
-begin
-  if p_day >= (now() at time zone 'Europe/Istanbul')::date then
-    raise exception 'Only completed days can be settled';
-  end if;
-  insert into public.settled_days(day) values(p_day) on conflict do nothing;
-  get diagnostics v_rows = row_count;
-  if v_rows=0 then return 0; end if;
-  for v_user in
-    select r.user_id from public.daily_runs r
-    where r.day=p_day and r.submitted_at is not null and
-      (select count(*) from public.daily_picks dp where dp.user_id=r.user_id and dp.day=p_day)=6
-    order by md5(r.user_id::text || p_day::text),r.user_id
+  if target_day>=public.game_today() then return; end if;
+  perform pg_advisory_xact_lock(hashtext('daily-stat-clash:'||target_day::text));
+  if exists(select 1 from public.game_settled_days where day=target_day) then return; end if;
+  for pair in
+    with eligible as (
+      select e.user_id,
+             row_number() over(order by md5(target_day::text||e.user_id::text),e.user_id) as row_no
+      from public.game_entries e
+      where e.day=target_day and e.submitted_at is not null
+        and (select count(*) from public.game_picks p where p.user_id=e.user_id and p.day=e.day)=6
+    )
+    select a.user_id as a,b.user_id as b
+    from eligible a join eligible b on b.row_no=a.row_no+1
+    where mod(a.row_no,2)=1
   loop
-    if v_pending is null then
-      v_pending:=v_user;
-    else
-      v_a_score:=0; v_b_score:=0; v_breakdown:='[]'::jsonb;
-      foreach v_stat in array array['strength','dexterity','battle_iq','endurance','hacks','iq'] loop
-        select case v_stat when 'strength' then c.strength when 'dexterity' then c.dexterity
-           when 'battle_iq' then c.battle_iq when 'endurance' then c.endurance
-           when 'hacks' then c.hacks else c.iq end
-          into v_a
-        from public.daily_picks p join public.characters c on c.id=p.character_id
-        where p.user_id=v_pending and p.day=p_day and p.stat=v_stat;
-        select case v_stat when 'strength' then c.strength when 'dexterity' then c.dexterity
-           when 'battle_iq' then c.battle_iq when 'endurance' then c.endurance
-           when 'hacks' then c.hacks else c.iq end
-          into v_b
-        from public.daily_picks p join public.characters c on c.id=p.character_id
-        where p.user_id=v_user and p.day=p_day and p.stat=v_stat;
-        if v_a>v_b then v_a_score:=v_a_score+1; end if;
-        if v_b>v_a then v_b_score:=v_b_score+1; end if;
-        v_breakdown:=v_breakdown || jsonb_build_array(jsonb_build_object(
-          'stat',v_stat,'a',v_a,'b',v_b,'winner',
-          case when v_a>v_b then 'a' when v_b>v_a then 'b' else 'tie' end
-        ));
-      end loop;
-      insert into public.matchups(day,user_a,user_b,a_score,b_score,breakdown)
-        values(p_day,v_pending,v_user,v_a_score,v_b_score,v_breakdown);
-      v_matches:=v_matches+1;
-      v_pending:=null;
-    end if;
+    total_a:=0; total_b:=0; outcomes:='[]'::jsonb;
+    foreach slot in array array['strength','dexterity','battle_iq','endurance','hacks','iq'] loop
+      select p.character_id into char_a from public.game_picks p
+      where p.day=target_day and p.user_id=pair.a and p.stat=slot;
+      select p.character_id into char_b from public.game_picks p
+      where p.day=target_day and p.user_id=pair.b and p.stat=slot;
+      select (to_jsonb(s)->>slot)::int into value_a from game_private.character_stats s where s.id=char_a;
+      select (to_jsonb(s)->>slot)::int into value_b from game_private.character_stats s where s.id=char_b;
+      if value_a>value_b then total_a:=total_a+1; end if;
+      if value_b>value_a then total_b:=total_b+1; end if;
+      outcomes:=outcomes||jsonb_build_array(jsonb_build_object(
+        'stat',slot,'a',value_a,'b',value_b,'a_character',char_a,'b_character',char_b));
+    end loop;
+    insert into public.game_duels(day,player_a,player_b,points_a,points_b,details)
+    values(target_day,pair.a,pair.b,total_a,total_b,outcomes);
   end loop;
-  return v_matches;
-end;
-$$;
+  insert into public.game_settled_days(day) values(target_day) on conflict do nothing;
+end; $$;
+revoke all on function public.game_settle_day(date) from public,anon,authenticated;
 
-create or replace function public.settle_missed()
-returns integer language plpgsql volatile security definer set search_path=public,pg_temp
-as $$
-declare v_day date;
-declare v_result integer := 0;
-declare v_today date := (now() at time zone 'Europe/Istanbul')::date;
+create or replace function public.game_state()
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare
+  me uuid:=auth.uid();
+  day_now date:=public.game_today();
+  result jsonb;
 begin
-  for v_day in select generate_series(v_today-30,v_today-1,interval '1 day')::date loop
-    v_result:=v_result+public.settle_day(v_day);
-  end loop;
-  return v_result;
-end;
-$$;
+  perform public.game_settle_day(day_now-1);
+  select jsonb_build_object(
+    'day',day_now,'user',case when me is null then null else (
+       select jsonb_build_object('id',p.user_id,'handle',p.handle)
+       from public.game_profiles p where p.user_id=me) end,
+    'participants',(select count(*) from public.game_entries e where e.day=day_now and e.submitted_at is not null),
+    'totalCharacters',(select count(*) from public.game_characters),
+    'current',(select to_jsonb(c) from public.game_entries e
+       join public.game_characters c on c.id=e.current_character
+       where e.user_id=me and e.day=day_now),
+    'picks',coalesce((select jsonb_agg(jsonb_build_object('stat',p.stat,'character_id',p.character_id,'name',c.name,'universe',c.universe,'portrait_url',c.portrait_url))
+       from public.game_picks p join public.game_characters c on c.id=p.character_id
+       where p.user_id=me and p.day=day_now),'[]'::jsonb),
+    'submitted',coalesce((select e.submitted_at is not null from public.game_entries e where e.user_id=me and e.day=day_now),false),
+    'history',coalesce((select jsonb_agg(jsonb_build_object(
+        'day',d.day,'self_points',case when d.player_a=me then d.points_a else d.points_b end,
+        'opponent_points',case when d.player_a=me then d.points_b else d.points_a end,
+        'opponent',case when d.player_a=me then pb.handle else pa.handle end,
+        'reversed',d.player_b=me,'details',d.details) order by d.day desc)
+      from (select * from public.game_duels where player_a=me or player_b=me order by day desc limit 30) d
+      join public.game_profiles pa on pa.user_id=d.player_a
+      join public.game_profiles pb on pb.user_id=d.player_b),'[]'::jsonb)
+  ) into result;
+  return result;
+end; $$;
 
--- Supabase public and authenticated API consumers get functions, never tables.
-revoke all on function public.game_state() from public,anon,authenticated;
-revoke all on function public.assign_stat(text) from public,anon,authenticated;
-revoke all on function public.submit_lineup() from public,anon,authenticated;
-revoke all on function public.leaderboard(text) from public,anon,authenticated;
-revoke all on function public.settle_day(date) from public,anon,authenticated;
-revoke all on function public.settle_missed() from public,anon,authenticated;
-grant execute on function public.game_state(),public.assign_stat(text),public.submit_lineup() to authenticated;
-grant execute on function public.leaderboard(text) to anon,authenticated;
+create or replace function public.game_draw()
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare
+  me uuid:=auth.uid();
+  today date:=public.game_today();
+  entry public.game_entries%rowtype;
+  picked_id text;
+  card jsonb;
+begin
+  if me is null then raise exception 'Sign in required'; end if;
+  insert into public.game_entries(user_id,day) values(me,today) on conflict do nothing;
+  select * into entry from public.game_entries where user_id=me and day=today for update;
+  if entry.submitted_at is not null then raise exception 'Lineup already submitted'; end if;
+  if entry.current_character is not null then
+    select to_jsonb(c) into card from public.game_characters c where c.id=entry.current_character;
+    return card;
+  end if;
+  if (select count(*) from public.game_picks where user_id=me and day=today)>=6 then
+    raise exception 'All six stats are assigned';
+  end if;
+  select c.id into picked_id from public.game_characters c
+   where not exists(select 1 from public.game_picks p where p.user_id=me and p.day=today and p.character_id=c.id)
+   order by random() limit 1;
+  if picked_id is null then raise exception 'No characters available'; end if;
+  update public.game_entries set current_character=picked_id where user_id=me and day=today;
+  select to_jsonb(c) into card from public.game_characters c where c.id=picked_id;
+  return card;
+end; $$;
+
+create or replace function public.game_assign(p_stat text)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare
+  me uuid:=auth.uid();
+  today date:=public.game_today();
+  entry public.game_entries%rowtype;
+begin
+  if me is null then raise exception 'Sign in required'; end if;
+  if p_stat not in ('strength','dexterity','battle_iq','endurance','hacks','iq') then
+    raise exception 'Unknown stat'; end if;
+  select * into entry from public.game_entries where user_id=me and day=today for update;
+  if not found or entry.current_character is null then raise exception 'Draw a character first'; end if;
+  if entry.submitted_at is not null then raise exception 'Lineup already submitted'; end if;
+  insert into public.game_picks(user_id,day,stat,character_id)
+    values(me,today,p_stat,entry.current_character);
+  update public.game_entries set current_character=null where user_id=me and day=today;
+  return public.game_state();
+end; $$;
+
+create or replace function public.game_submit()
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare
+  me uuid:=auth.uid();
+  today date:=public.game_today();
+  entry public.game_entries%rowtype;
+begin
+  if me is null then raise exception 'Sign in required'; end if;
+  select * into entry from public.game_entries where user_id=me and day=today for update;
+  if not found then raise exception 'No lineup started'; end if;
+  if entry.submitted_at is not null then return public.game_state(); end if;
+  if entry.current_character is not null or
+    (select count(*) from public.game_picks where user_id=me and day=today)<>6
+    then raise exception 'Assign six different characters before submitting'; end if;
+  update public.game_entries set submitted_at=now() where user_id=me and day=today;
+  return public.game_state();
+end; $$;
+
+create or replace function public.game_leaderboard(p_period text default 'weekly')
+returns jsonb language sql stable security definer set search_path='' as $$
+  with bounds as (
+    select case p_period
+      when 'alltime' then date '1900-01-01'
+      when 'monthly' then date_trunc('month', public.game_today()::timestamp)::date
+      else date_trunc('week', public.game_today()::timestamp)::date end as start_day
+  ), score as (
+    select d.player_a as uid,d.day,d.points_a as points from public.game_duels d,bounds b where d.day>=b.start_day
+    union all
+    select d.player_b,d.day,d.points_b from public.game_duels d,bounds b where d.day>=b.start_day
+  )
+  select coalesce(jsonb_agg(
+    jsonb_build_object('handle',t.handle,'score',t.score,'matches',t.matches,'rank',t.position)
+    order by t.position),'[]'::jsonb)
+  from (
+    select p.handle,coalesce(sum(s.points),0)::int as score,count(s.day)::int as matches,
+    row_number() over(order by coalesce(sum(s.points),0) desc,count(s.day) desc,p.handle asc) as position
+    from public.game_profiles p left join score s on s.uid=p.user_id
+    group by p.user_id,p.handle
+    order by score desc,matches desc,p.handle
+    limit 100
+  ) t;
+$$;
+revoke all on function public.game_draw() from public,anon;
+revoke all on function public.game_assign(text) from public,anon;
+revoke all on function public.game_submit() from public,anon;
+grant execute on function public.game_draw(),public.game_assign(text),public.game_submit() to authenticated;
+grant execute on function public.game_state(),public.game_leaderboard(text) to anon,authenticated;
+
+-- Optional scheduled reconciliation is in schedule.sql; game_state also settles yesterday.

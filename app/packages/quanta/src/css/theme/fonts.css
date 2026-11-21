@@ -1,8 +1,0 @@
-/*
- * Cloud-hosted source export: bundled third-party binary font assets are not
- * part of the repository. The design tokens continue to use their font family
- * names; browsers fall back to system fonts where these families are absent.
- *
- * This file intentionally contains no @font-face rules or missing .woff2 URLs,
- * so bundlers do not fail while resolving unavailable font binaries.
- */
