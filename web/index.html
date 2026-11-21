@@ -4,13 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#100d1a">
-  <meta name="daily-stat-clash-roster" content="crossover-160-20261122-r2">
+  <meta name="daily-stat-clash-roster" content="local3-roundrobin-20261122-v1">
   <meta name="description" content="Daily Stat Clash — choose six characters, trust your instincts, and battle for the leaderboard.">
   <base href="/Daily-Stat-Clash/">
   <title>Daily Stat Clash — Choose wisely. Win daily.</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="stylesheet" href="styles.css?build=crossover-160-20261122-r2">
-  <script src="app.js?build=crossover-160-20261122-r2" defer></script>
+  <link rel="stylesheet" href="styles.css?build=local3-roundrobin-20261122-v1">
+  <script src="matchup-engine.js?build=local3-roundrobin-20261122-v1" defer></script>
+  <script src="app.js?build=local3-roundrobin-20261122-v1" defer></script>
 </head>
 <body>
   <div class="ambient ambient-1"></div><div class="ambient ambient-2"></div>
@@ -23,16 +24,21 @@
       <nav class="desktop-nav" aria-label="Main navigation">
         <a href="#arena">THE ARENA</a><a href="#leaderboard">LEADERBOARD</a><a href="#history">HISTORY</a>
       </nav>
-      <div class="top-actions"><span id="user-handle" class="user-handle" hidden></span><button id="guest-start" class="btn btn-primary" type="button">PLAY AS GUEST <span>↗</span></button></div>
+      <div class="top-actions"><span id="user-handle" class="user-handle" hidden></span><button id="guest-start" class="btn btn-primary" type="button">CREATE GUEST 1 ↗</button></div>
     </header>
     <div id="guest-notice" class="server-notice" role="status">
-      GUEST MODE · Your picks are saved in this browser. Online matchmaking and global rankings are not active yet.
+      THREE-GUEST LOCAL LEAGUE · Each guest has a separate lineup. Compare all three matchups locally; there is no online multiplayer.
     </div>
     <main>
+      <section id="guest-lobby" class="guest-lobby" aria-label="Local player profiles">
+        <div class="guest-lobby-heading"><span class="eyebrow">LOCAL PLAYERS</span><span id="guest-count">0 / 3 GUESTS</span></div>
+        <div id="guest-switcher" class="guest-switcher" aria-label="Switch between three guests"></div>
+        <p class="guest-lobby-help">Click an empty slot to create a guest, or select an existing guest to continue their separate lineup.</p>
+      </section>
       <section class="hero">
         <div class="hero-kicker"><span class="pulse-dot"></span> A NEW CHALLENGE, EVERY DAY <span class="hairline"></span> <span id="today-label">ISTANBUL TIME</span></div>
         <h1>MAKE YOUR <span>CHOICES.</span><br>OWN THE <i>OUTCOME.</i></h1>
-        <p class="hero-copy">160 characters across Hunter x Hunter, Naruto, DC, Marvel, The Witcher, Jujutsu Kaisen, Attack on Titan and Bleach. Play as Guest to draw six fighters and assign their hidden stats.</p>
+        <p class="hero-copy">160 characters across Hunter x Hunter, Naruto, DC, Marvel, The Witcher, Jujutsu Kaisen, Attack on Titan and Bleach. Create three guests on this device, give each six fighters and compare their stat matchups.</p>
         <div class="hero-stats">
           <div><b id="count-characters">160</b><span>CHARACTERS</span></div>
           <div class="stat-divider"></div><div><b>06</b><span>DAILY PICKS</span></div>
@@ -45,7 +51,7 @@
           <div class="progress-track"><div id="progress-fill" class="progress-fill" style="width:0%"></div></div>
           <p class="panel-subtitle">Every character can be assigned only once. Their stat values stay secret until the daily matchup is settled.</p>
           <div id="stat-grid" class="stat-grid" aria-live="polite"></div>
-          <div class="lineup-footer"><p id="lineup-status">Press Play as Guest to begin today's challenge.</p><button id="submit-lineup" type="button" class="btn btn-primary" disabled>SUBMIT LINEUP <span>↗</span></button></div>
+          <div class="lineup-footer"><p id="lineup-status">Create a guest profile to begin.</p><button id="submit-lineup" type="button" class="btn btn-primary" disabled>SUBMIT LINEUP <span>↗</span></button></div>
         </article>
         <aside class="draw-side">
           <article class="draw-panel">
@@ -54,20 +60,28 @@
             <div class="character-details"><span id="current-world" class="character-world">THE ARENA AWAITS</span><h3 id="current-name">A fighter is waiting.</h3><p id="draw-description">Start as a guest, reveal your next character, and choose the stat that suits them.</p></div>
             <div class="draw-bottom"><span class="lock-icon">◇</span><span id="draw-note">STATS HIDDEN UNTIL REVEAL</span></div>
           </article>
-          <article class="timer-panel"><span class="eyebrow">NEXT MATCHUP</span><div id="countdown" class="countdown">-- : -- : --</div><span>MIDNIGHT · EUROPE / ISTANBUL</span></article>
+          <article class="timer-panel"><span class="eyebrow">NEXT DAILY RESET</span><div id="countdown" class="countdown">-- : -- : --</div><span>MIDNIGHT · EUROPE / ISTANBUL</span></article>
         </aside>
       </section>
-      <section id="leaderboard" class="section-panel leaderboard-section">
-        <div class="section-header"><div><span class="eyebrow">03 / THE RANKINGS</span><h2>Hall of contenders</h2></div><div class="tab-switch" role="group" aria-label="Leaderboard period"><button class="board-tab active" data-period="weekly">WEEKLY</button><button class="board-tab" data-period="monthly">MONTHLY</button><button class="board-tab" data-period="alltime">ALL TIME</button></div></div>
-        <div class="board-head"><span>RANK / PLAYER</span><span>MATCHES</span><span>POINTS</span></div>
-        <div id="leaderboard-rows" class="board-rows"><div class="empty-state">Guest preview — live rankings are not available.</div></div>
+      <section id="matchups" class="section-panel matchup-section">
+        <div class="section-header">
+          <div><span class="eyebrow">03 / LOCAL MATCHUPS</span><h2>Three-guest showdown</h2></div>
+          <button class="btn btn-primary" id="resolve-matches" type="button" disabled>CALCULATE MATCHUPS ↗</button>
+        </div>
+        <p id="matchup-status" class="matchup-intro">Create three guests. Each must submit six characters to enable local match calculations.</p>
+        <div id="matchup-results" class="matchup-results" aria-live="polite"></div>
       </section>
-      <section id="history" class="section-panel history-section"><div class="section-header"><div><span class="eyebrow">04 / YOUR PAST CLASHES</span><h2>Match history</h2></div><span class="history-tag">SAVED ON THIS DEVICE</span></div><div id="history-list" class="history-list"><div class="empty-state">Your guest submissions on this device will appear here.</div></div></section>
-      <section class="how-section"><span class="eyebrow">THE RULES OF ENGAGEMENT</span><h2>A game of intuition.</h2><div class="rule-grid"><div><span>01</span><h3>Draw a character</h3><p>Get a random guest name, then reveal a fighter. Their stats stay hidden.</p></div><div><span>02</span><h3>Assign a category</h3><p>Lock them into Strength, Dexterity, Battle IQ, Endurance, Hacks, or IQ.</p></div><div><span>03</span><h3>Face the matchup</h3><p>Submit all six picks. In guest mode your lineup is saved on this device; scoring and opponents will be added with multiplayer.</p></div></div></section>
+      <section id="leaderboard" class="section-panel leaderboard-section">
+        <div class="section-header"><div><span class="eyebrow">04 / LOCAL RANKINGS</span><h2>Local leaderboard</h2></div><div class="tab-switch" role="group" aria-label="Leaderboard period"><button class="board-tab active" data-period="weekly">WEEKLY</button><button class="board-tab" data-period="monthly">MONTHLY</button><button class="board-tab" data-period="alltime">ALL TIME</button></div></div>
+        <div class="board-head"><span>RANK / PLAYER</span><span>MATCHES</span><span>POINTS</span></div>
+        <div id="leaderboard-rows" class="board-rows"><div class="empty-state">Create three guests and resolve their matchups to populate this local ranking.</div></div>
+      </section>
+      <section id="history" class="section-panel history-section"><div class="section-header"><div><span class="eyebrow">05 / LOCAL MATCH HISTORY</span><h2>Match history</h2></div><span class="history-tag">SAVED ON THIS DEVICE</span></div><div id="history-list" class="history-list"><div class="empty-state">Switch guests to see their completed local matchups.</div></div></section>
+      <section class="how-section"><span class="eyebrow">THE RULES OF ENGAGEMENT</span><h2>A game of intuition.</h2><div class="rule-grid"><div><span>01</span><h3>Build three lineups</h3><p>Create three random local guest names and complete each guest’s six stat slots.</p></div><div><span>02</span><h3>Assign a category</h3><p>Lock them into Strength, Dexterity, Battle IQ, Endurance, Hacks, or IQ.</p></div><div><span>03</span><h3>Face the matchup</h3><p>Create three local guests and submit six picks for each. At midnight Istanbul time the local matchups resolve automatically, or use Calculate Matchups to test immediately. Every winning stat earns +1; ties give 0.</p></div></div></section>
     </main>
     <footer><div class="brand brand-footer"><span class="brand-mark">✦</span><span class="brand-name">DAILY <em>STAT</em> CLASH</span></div><span>BUILT FOR THE BOLD. RESETS DAILY AT 00:00 IST.</span><a href="https://github.com/Einsche/Daily-Stat-Clash" target="_blank" rel="noopener noreferrer">SOURCE ON GITHUB ↗</a></footer>
   </div>
   <div id="notification" class="notification" role="status" aria-live="polite" hidden></div>
-  <div id="confirm-backdrop" class="confirm-backdrop" hidden><div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><span class="eyebrow">FINAL CHECK</span><h2 id="confirm-title">Lock in your lineup?</h2><p>Once submitted, your six choices are locked for today on this device. Live matchmaking is not enabled in guest mode.</p><div class="confirm-actions"><button class="btn btn-outline" id="confirm-cancel">GO BACK</button><button class="btn btn-primary" id="confirm-submit">CONFIRM LINEUP ↗</button></div></div></div>
+  <div id="confirm-backdrop" class="confirm-backdrop" hidden><div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><span class="eyebrow">FINAL CHECK</span><h2 id="confirm-title">Lock in your lineup?</h2><p>Submitted picks are locked for this device and day. After all three guests submit, calculate three pairwise matchups or let them resolve at Istanbul midnight.</p><div class="confirm-actions"><button class="btn btn-outline" id="confirm-cancel">GO BACK</button><button class="btn btn-primary" id="confirm-submit">CONFIRM LINEUP ↗</button></div></div></div>
 </body>
 </html>
