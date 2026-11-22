@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#100d1a">
-  <meta name="daily-stat-clash-roster" content="local3-roundrobin-20261122-v2">
+  <meta name="daily-stat-clash-roster" content="local3-reset-20261122-v1">
   <meta name="description" content="Daily Stat Clash — choose six characters, trust your instincts, and battle for the leaderboard.">
   <base href="/Daily-Stat-Clash/">
   <title>Daily Stat Clash — Choose wisely. Win daily.</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="stylesheet" href="styles.css?build=local3-roundrobin-20261122-v2">
-  <script src="matchup-engine.js?build=local3-roundrobin-20261122-v2" defer></script>
-  <script src="app.js?build=local3-roundrobin-20261122-v2" defer></script>
+  <link rel="stylesheet" href="styles.css?build=local3-reset-20261122-v1">
+  <script src="matchup-engine.js?build=local3-reset-20261122-v1" defer></script>
+  <script src="app.js?build=local3-reset-20261122-v1" defer></script>
 </head>
 <body>
   <div class="ambient ambient-1"></div><div class="ambient ambient-2"></div>
@@ -31,7 +31,7 @@
     </div>
     <main>
       <section id="guest-lobby" class="guest-lobby" aria-label="Local player profiles">
-        <div class="guest-lobby-heading"><span class="eyebrow">LOCAL PLAYERS</span><span id="guest-count">0 / 3 GUESTS</span></div>
+        <div class="guest-lobby-heading"><span class="eyebrow">LOCAL PLAYERS</span><div class="guest-lobby-controls"><span id="guest-count">0 / 3 GUESTS</span><button id="reset-three" class="btn btn-outline btn-reset" type="button" disabled>RESET 3 LINEUPS <span>↻</span></button></div></div>
         <div id="guest-switcher" class="guest-switcher" aria-label="Switch between three guests"></div>
         <p class="guest-lobby-help">Click an empty slot to create a guest, or select an existing guest to continue their separate lineup.</p>
       </section>
@@ -82,6 +82,7 @@
     <footer><div class="brand brand-footer"><span class="brand-mark">✦</span><span class="brand-name">DAILY <em>STAT</em> CLASH</span></div><span>BUILT FOR THE BOLD. RESETS DAILY AT 00:00 IST.</span><a href="https://github.com/Einsche/Daily-Stat-Clash" target="_blank" rel="noopener noreferrer">SOURCE ON GITHUB ↗</a></footer>
   </div>
   <div id="notification" class="notification" role="status" aria-live="polite" hidden></div>
+  <div id="reset-backdrop" class="confirm-backdrop" hidden><div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="reset-title"><span class="eyebrow">RESET TODAY'S MATCHUPS</span><h2 id="reset-title">Reset all three guests?</h2><p>This clears today's character picks, all three Submit states, and today's calculated matchups and points. Guest names and previous days' results will stay saved on this device.</p><div class="confirm-actions"><button class="btn btn-outline" id="reset-cancel" type="button">CANCEL</button><button class="btn btn-primary" id="reset-confirm" type="button">RESET TODAY ↻</button></div></div></div>
   <div id="confirm-backdrop" class="confirm-backdrop" hidden><div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><span class="eyebrow">FINAL CHECK</span><h2 id="confirm-title">Lock in your lineup?</h2><p>Submitted picks are locked for this device and day. After all three guests submit, calculate three pairwise matchups or let them resolve at Istanbul midnight.</p><div class="confirm-actions"><button class="btn btn-outline" id="confirm-cancel">GO BACK</button><button class="btn btn-primary" id="confirm-submit">CONFIRM LINEUP ↗</button></div></div></div>
 </body>
 </html>
