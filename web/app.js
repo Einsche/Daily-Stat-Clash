@@ -392,7 +392,11 @@
       const head=el('div','duel-head');
       head.append(el('strong','',match.handleA),el('span','duel-score',
         match.pointsA+' : '+match.pointsB),el('strong','',match.handleB));
-      card.append(head,duelDetail(match));
+      card.append(head);
+      const verdict=match.pointsA===match.pointsB?'TIED MATCH':
+        'WINNER · '+(match.pointsA>match.pointsB?match.handleA:match.handleB);
+      card.append(el('div','duel-verdict',verdict));
+      card.append(duelDetail(match));
       result.append(card);
     }
   }
