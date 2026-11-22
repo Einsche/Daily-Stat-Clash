@@ -11,7 +11,7 @@
   const LEGACY_PLAYER='daily-stat-clash.guest.player.v1';
   const LEGACY_ROUND='daily-stat-clash.guest.round.v1';
   const ROSTER_VERSION='hxh-naruto-dc-marvel-witcher-jjk-aot-bleach-v2';
-  const ASSET_VERSION='local3-roundrobin-20261122-v1';
+  const ASSET_VERSION='local3-roundrobin-20261122-v2';
   const MAX_GUESTS=3;
   const STAT_INFO=[
     ['strength','STR','Strength','Raw physical power'],
