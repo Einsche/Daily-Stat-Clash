@@ -1,17 +1,23 @@
-# Current public Daily Stat Clash — crossover guest mode
+# Three-Guest Local Mode — Daily Stat Clash
 
-URL: https://einsche.github.io/Daily-Stat-Clash/
+Play: https://einsche.github.io/Daily-Stat-Clash/
 
-The guest character roster has **160 characters from exactly eight universes**: Hunter x Hunter, Naruto, DC, Marvel, The Witcher, Jujutsu Kaisen, Attack on Titan and Bleach, 20 per universe.
+This version runs **three independent guest profiles on one browser/device**, without signup, login, email, Supabase, or a deployed Node.js backend.
 
-The old 101 original characters are no longer part of the active draw pool. `guest-roster.json` contains only character IDs, names and universe names. All six scores are kept out of the browser bundle (though the source repository's full dataset is public).
+### How to use
 
-Press **PLAY AS GUEST** to get a random nickname and a first character. Each assigned character automatically draws the next one, until six distinct picks are assigned. Submit locks the current browser's daily lineup. No sign-in or account provider is needed.
+Create Guest 1, Guest 2 and Guest 3 via the header button or the three guest slots. Each gets a unique random nickname. Click a guest slot to resume that person's separate picks.
 
-The browser uses `localStorage` for nickname, current card, picks and prior submissions. The eight-franchise revision clears prior guest lineups and submission history on first load, since those records referenced the retired original characters. Names are retained.
+Each guest assigns six distinct random characters to Strength, Dexterity, Battle IQ, Endurance, Hacks and IQ, and submits. When all three are submitted, select **Calculate Matchups** for immediate local testing; if left pending, the completed day is settled automatically at 00:00 Istanbul on the next visit or while the page is open.
 
-This is a local-only demo. Scored multiplayer matches, cross-device accounts and public leaderboards are not yet active.
+### Scoring
 
-Official character likenesses/portraits are not included. The UI uses initials with universe-specific gradient colors until properly licensed or user-provided artwork is available. The earlier original-character portrait assets are no longer packaged into GitHub Pages.
+All three guests play one-on-one against each other: 1–2, 1–3 and 2–3. For each of the six stats, the higher assigned character value earns +1, and an equal value earns 0 to both players. Each guest plays two matches (maximum 12 points per local day). Results include numerical values and winners for every stat. Local weekly/monthly/all-time ranks aggregate earned points; match histories are visible for the selected guest.
 
-The Node.js/SQLite server in `server/` is optional future multiplayer infrastructure and is not currently deployed.
+The separate browser profiles, picks, results and previous days are persisted locally and survive page reloads. This is not networked multiplayer; a different browser or device has separate guests and scores.
+
+### Active character data
+
+Exactly 160 fictional/franchise character identities across 8 universes (20 each) in `guest-roster.json`. All six numeric ratings are stored in `guest-score-map.json` so local matches can actually be calculated. Because this is GitHub Pages with no backend, those ratings are publicly accessible despite staying hidden in the normal selection interface. Original copyrighted character portraits are not included.
+
+The optional `server/` folder is future multiplayer infrastructure, not used by this release.
