@@ -22,21 +22,29 @@ jobs:
         shell: bash
         run: |
           node --check web/app.js
+          node --check web/matchup-engine.js
           node <<'NODE'
           const fs=require('node:fs');
           const assert=require('node:assert/strict');
           const html=fs.readFileSync('web/index.html','utf8');
           const js=fs.readFileSync('web/app.js','utf8');
           const roster=JSON.parse(fs.readFileSync('web/guest-roster.json','utf8'));
+          const scores=JSON.parse(fs.readFileSync('web/guest-score-map.json','utf8'));
+          const engine=require('./web/matchup-engine.js');
           const ids=new Set([...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
           const references=[...js.matchAll(/\$\('([^']+)'\)/g)].map(m=>m[1]);
           const created=new Set([...js.matchAll(/\.id\s*=\s*'([^']+)'/g)].map(m=>m[1]));
           const missing=[...new Set(references)].filter(id=>!ids.has(id)&&!created.has(id));
           assert.deepEqual(missing,[],'Missing DOM elements');
           assert.ok(ids.has('guest-start'),'Missing guest button');
+          assert.ok(ids.has('guest-switcher'),'Missing three-slot guest switcher');
+          assert.ok(ids.has('resolve-matches'),'Missing local matchup calculation button');
+          assert.ok(html.includes('matchup-engine.js'),'Matchup engine script missing');
           assert.ok(!html.includes('auth-dialog'),'Login form must be removed');
           assert.ok(!html.includes('SIGN IN') && !html.includes('CREATE ACCOUNT'));
           assert.equal(roster.length,160,'Guest roster must contain 160 characters');
+          assert.equal(Object.keys(scores.stats).length,160);
+          assert.equal(scores.rosterVersion,'hxh-naruto-dc-marvel-witcher-jjk-aot-bleach-v2');
           assert.equal(new Set(roster.map(x=>x.id)).size,160);
           const full=JSON.parse(fs.readFileSync('app/src/data/characters.json','utf8'));
           assert.deepEqual(roster.map(x=>x.id),full.map(x=>x.id));
@@ -53,14 +61,18 @@ jobs:
             assert.deepEqual(Object.keys(c).sort(),['id','name','universe']);
             const fullCharacter=full.find(x=>x.id===c.id);
             assert.ok(fullCharacter,'Guest entry must have a full database entry');
+            const score=scores.stats[c.id];
+            assert.ok(score,'Guest scoring values missing for '+c.id);
             assert.equal(fullCharacter.portrait_url,null,'Franchise artwork is not licensed');
             for(const stat of ['strength','dexterity','battle_iq','endurance','hacks','iq']){
+              assert.equal(score[stat],fullCharacter[stat]);
               assert.ok(Number.isInteger(fullCharacter[stat]) &&
                 fullCharacter[stat]>=0 && fullCharacter[stat]<=100,
                 'Missing valid '+stat+' for '+c.id);
             }
           }
-          assert.ok(js.includes('PLAY AS GUEST'));
-          assert.ok(js.includes('localStorage') && js.includes('dayIstanbul'));
-          console.log('PASS: guest-only interface, eight universes, 160 characters and hidden scores');
+          assert.ok(js.includes('CREATE GUEST '));
+          assert.ok(js.includes('localStorage') && js.includes('nowDay'));
+          assert.equal(engine.STATS.length,6);
+          console.log('PASS: independent 3-guest interface, 160 scores, matchup engine and 8 universes');
           NODE
