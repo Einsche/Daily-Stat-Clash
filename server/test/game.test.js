@@ -112,10 +112,17 @@ test('public HTTP frontend, API, login and strict CORS',async()=>{
     const home=await fetch(url+'/');
     const html=await home.text();
     assert.equal(home.status,200);
-    assert.ok(html.includes('PLAY AS GUEST'));
+    assert.ok(html.includes('CREATE GUEST 1'));
+    assert.ok(html.includes('matchup-engine.js'));
     assert.ok(!html.includes('SIGN IN'));
     assert.ok(!html.includes('CREATE ACCOUNT'));
     assert.ok(!html.includes('EMAIL ADDRESS'));
+    const engineFile=await fetch(url+'/matchup-engine.js');
+    assert.equal(engineFile.status,200);
+    const scoringFile=await fetch(url+'/guest-score-map.json');
+    assert.equal(scoringFile.status,200);
+    const scores=await scoringFile.json();
+    assert.equal(Object.keys(scores.stats).length,160);
     const guestRosterResponse=await fetch(url+'/guest-roster.json');
     assert.equal(guestRosterResponse.status,200);
     const guestRoster=await guestRosterResponse.json();
