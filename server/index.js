@@ -151,6 +151,8 @@ function createApp({game = makeGame(), allowedOrigin = process.env.PUBLIC_WEB_OR
         [ROOT+'/app.js']:['app.js','text/javascript; charset=utf-8'],
         [ROOT+'/config.js']:['config.js','text/javascript; charset=utf-8'],
         [ROOT+'/guest-roster.json']:['guest-roster.json','application/json; charset=utf-8'],
+        [ROOT+'/guest-score-map.json']:['guest-score-map.json','application/json; charset=utf-8'],
+        [ROOT+'/matchup-engine.js']:['matchup-engine.js','text/javascript; charset=utf-8'],
         [ROOT+'/styles.css']:['styles.css','text/css; charset=utf-8'],
         [ROOT+'/favicon.svg']:['favicon.svg','image/svg+xml']
       };
