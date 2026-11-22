@@ -262,3 +262,98 @@ test('legacy local single guest migrates into first of the three slots',async()=
   page.ids.get('guest-start').click();
   assert.equal(persisted(store).profiles.length,2);
 });
+
+
+test('reset confirmation clears all three submitted lineups and same-day points, preserving guests',async()=>{
+  const store=storage(),clock={now:Date.parse('2026-11-22T13:00:00Z')};
+  const page=mount(store,clock);
+  await flush();
+  assert.equal(page.ids.get('reset-three').disabled,true,'Reset disabled before any guest exists');
+  for(let i=0;i<3;i++){
+    page.ids.get('guest-start').click();
+    fillCurrentGuest(page,store);
+  }
+  assert.equal(page.ids.get('reset-three').disabled,false);
+  page.ids.get('resolve-matches').click();
+  const original=persisted(store);
+  assert.equal(original.days[DAY].matches.length,3);
+  assert.equal(original.days[DAY].resolvedAt>0,true);
+  const names=original.profiles.map(p=>p.handle);
+  const active=original.activeId;
+  const scoreCount=page.ids.get('leaderboard-rows').children.length;
+  assert.equal(scoreCount,3);
+  page.ids.get('reset-three').click();
+  assert.equal(page.ids.get('reset-backdrop').hidden,false);
+  assert.equal(persisted(store).days[DAY].matches.length,3,
+    'Clicking reset alone must not erase anything');
+  page.ids.get('reset-cancel').click();
+  assert.equal(page.ids.get('reset-backdrop').hidden,true);
+  assert.equal(persisted(store).days[DAY].resolvedAt>0,true);
+  page.ids.get('reset-three').click();
+  page.ids.get('reset-confirm').click();
+  const reset=persisted(store);
+  assert.equal(page.ids.get('reset-backdrop').hidden,true);
+  assert.deepEqual(reset.profiles.map(p=>p.handle),names);
+  assert.equal(reset.activeId,active);
+  assert.equal(reset.days[DAY].resolvedAt,null);
+  assert.equal(reset.days[DAY].matches.length,0);
+  for(const profile of reset.profiles){
+    const round=reset.days[DAY].rounds[profile.id];
+    assert.equal(round.submitted,false);
+    assert.equal(round.picks.length,0);
+    if(profile.id===active)assert.ok(round.current,'Active guest immediately gets a new card');
+    else assert.equal(round.current,null,'Inactive guests remain fresh');
+  }
+  assert.equal(page.ids.get('resolve-matches').disabled,true);
+  assert.equal(page.ids.get('matchup-results').children.length,1,'Old match cards disappear');
+  assert.equal(page.ids.get('submit-lineup').disabled,true,'Submit is unlocked but needs 6 fresh picks');
+  const reopened=mount(store,clock);
+  await flush();
+  assert.deepEqual(persisted(store).profiles.map(p=>p.handle),names);
+  assert.equal(persisted(store).days[DAY].resolvedAt,null);
+  for(const profile of reset.profiles){
+    assert.equal(persisted(store).days[DAY].rounds[profile.id].submitted,false);
+  }
+  assert.equal(reopened.ids.get('reset-three').disabled,false);
+});
+
+test('reset preserves previous days and allows another full three-person calculation',async()=>{
+  const store=storage(),clock={now:Date.parse('2026-11-22T13:00:00Z')};
+  let page=mount(store,clock);
+  await flush();
+  for(let i=0;i<3;i++){
+    page.ids.get('guest-start').click();
+    fillCurrentGuest(page,store);
+  }
+  page.ids.get('resolve-matches').click();
+  const snapshot=persisted(store);
+  const oldDay='2026-11-21';
+  const previousResult=JSON.parse(JSON.stringify(snapshot.days[DAY]));
+  previousResult.day=oldDay;
+  for(const match of previousResult.matches){
+    match.day=oldDay;
+    match.id=match.id.replace(DAY,oldDay);
+  }
+  snapshot.days[oldDay]=previousResult;
+  store.setItem(KEY,JSON.stringify(snapshot));
+  page=mount(store,clock);
+  await flush();
+  page.ids.get('reset-three').click();
+  page.ids.get('reset-confirm').click();
+  let league=persisted(store);
+  assert.deepEqual(league.days[oldDay],previousResult,
+    'Historical matches and scores must remain unchanged');
+  assert.equal(league.days[DAY].matches.length,0);
+  assert.equal(page.ids.get('leaderboard-rows').children.length,3,
+    'Local leaderboard still includes previous results');
+  for(let i=0;i<3;i++){
+    clickGuestSlot(page,i);
+    fillCurrentGuest(page,store);
+  }
+  assert.equal(page.ids.get('resolve-matches').disabled,false);
+  page.ids.get('resolve-matches').click();
+  league=persisted(store);
+  assert.equal(league.days[DAY].matches.length,3,
+    'Reset guests should be able to play all three matches again');
+  assert.deepEqual(league.days[oldDay],previousResult);
+});
