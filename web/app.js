@@ -11,7 +11,7 @@
   const LEGACY_PLAYER='daily-stat-clash.guest.player.v1';
   const LEGACY_ROUND='daily-stat-clash.guest.round.v1';
   const ROSTER_VERSION='hxh-naruto-dc-marvel-witcher-jjk-aot-bleach-v2';
-  const ASSET_VERSION='local3-roundrobin-20261122-v2';
+  const ASSET_VERSION='local3-reset-20261122-v1';
   const MAX_GUESTS=3;
   const STAT_INFO=[
     ['strength','STR','Strength','Raw physical power'],
@@ -229,6 +229,35 @@
     const submitted=league.profiles.filter(p=>roundFor(p.id).submitted).length;
     notify('Lineup saved for '+guest.handle+'. '+submitted+'/3 guests submitted.');
   }
+  function canResetToday() {
+    if(!league.profiles.length)return false;
+    const entry=dayData();
+    return Boolean(entry.resolvedAt || (entry.matches||[]).length ||
+      league.profiles.some(profile=>{
+        const round=entry.rounds[profile.id];
+        return round && (round.submitted || round.picks.length>0 || !!round.current);
+      }));
+  }
+  function openReset() {
+    if(!canResetToday())return;
+    $('reset-backdrop').hidden=false;
+  }
+  function resetToday() {
+    $('reset-backdrop').hidden=true;
+    if(!canResetToday())return;
+    const entry=dayData();
+    // Reset the *current Istanbul day* for all existing guest slots, not the
+    // profiles or historical dates. Reverses all three Submit locks and scores.
+    entry.rounds={};
+    for(const profile of league.profiles)entry.rounds[profile.id]=freshRound();
+    entry.matches=[];
+    entry.resolvedAt=null;
+    delete entry.manual;
+    ensureActiveDraw();
+    persist();
+    render();
+    notify('Today reset: all 3 guest lineups, Submit locks and matchup scores cleared.');
+  }
   function canResolve(day=nowDay()) {
     if(!loaded || !scoreMap || league.profiles.length!==MAX_GUESTS)return false;
     const entry=dayData(day);
@@ -271,6 +300,7 @@
   function renderProfiles() {
     const root=$('guest-switcher');root.replaceChildren();
     $('guest-count').textContent=league.profiles.length+' / 3 GUESTS';
+    $('reset-three').disabled=!canResetToday();
     for(let i=0;i<MAX_GUESTS;i++) {
       const p=league.profiles[i],slot=el('button','guest-slot'+(p?.id===league.activeId?' active':''));
       slot.type='button';
@@ -537,6 +567,12 @@
   $('guest-start').addEventListener('click',()=>createGuest());
   drawButton.addEventListener('click',draw);
   $('resolve-matches').addEventListener('click',calculate);
+  $('reset-three').addEventListener('click',openReset);
+  $('reset-cancel').addEventListener('click',()=>{$('reset-backdrop').hidden=true;});
+  $('reset-confirm').addEventListener('click',resetToday);
+  $('reset-backdrop').addEventListener('click',event=>{
+    if(event.target===$('reset-backdrop'))$('reset-backdrop').hidden=true;
+  });
   $('submit-lineup').addEventListener('click',()=>{
     const r=activeRound();
     if(r.submitted || r.picks.length!==6 || r.current)return;
