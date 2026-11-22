@@ -99,3 +99,5 @@
   .duel-score{font-size:19px}
   .history-row>.matchup-breakdown{padding:6px}
 }
+
+.duel-verdict{text-align:center;padding:9px 12px 3px;color:#9fe4c5;font-size:10px;font-weight:800;letter-spacing:1.4px}
